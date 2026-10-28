@@ -1,0 +1,209 @@
+@import "tailwindcss";
+
+/*
+  Design tokens. Tailwind v4 turns every --color-* into utilities like
+  bg-board, text-muted, border-line, and every --font-* into font-display etc.
+  Change a value here and it updates across the whole site.
+*/
+@theme {
+  --color-board: #07120d; /* page background: the circuit board */
+  --color-panel: #0e1d16; /* cards */
+  --color-pad: #0a1812; /* unlit skill pads */
+  --color-module: #121614; /* chips and the display module */
+  --color-line: #1d3a2c; /* unlit traces and borders */
+  --color-line-strong: #2b5040;
+  --color-ink: #e6f0ea; /* main text */
+  --color-soft: #c3d4ca; /* nav text */
+  --color-muted: #a3bbae; /* secondary text */
+  --color-dim: #6f8a7d;
+  --color-copper: #d9a441; /* traces and accents */
+  --color-led: #ff4d4d; /* LEDs */
+
+  --font-display: "Chakra Petch", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+}
+
+:root {
+  --led-glow: rgb(255 77 77 / 0.55);
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-board);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-copper);
+  outline-offset: 3px;
+}
+
+/* Activity LEDs on the "now" channels: a steady blink like a busy indicator. */
+@keyframes activity {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* Traces that draw themselves once on load. Use with pathLength="1" on the <path>. */
+.trace-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: trace-draw 700ms ease-out forwards;
+}
+
+@keyframes trace-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Vias appear as each trace finishes. */
+.via-pop {
+  opacity: 0;
+  animation: via-pop 250ms ease-out forwards;
+}
+
+@keyframes via-pop {
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---------- Boot screen (components/BootScreen.tsx) ---------- */
+
+/* Until the board has booted: lock scrolling, keep the logo's LED dark and its traces undrawn. */
+html:not(.booted) body {
+  overflow: hidden;
+}
+html.booted #boot {
+  display: none;
+}
+.chip-led {
+  fill: var(--color-line-strong);
+  transition: fill 300ms ease, filter 300ms ease;
+}
+html.booted .chip-led {
+  fill: var(--color-led);
+  filter: drop-shadow(0 0 3px var(--color-led));
+}
+html:not(.booted) .trace-draw,
+html:not(.booted) .via-pop {
+  animation-play-state: paused;
+}
+
+/* Faint dot grid behind the boot screen, like an unpopulated board. */
+.boot-grid {
+  background-image: radial-gradient(circle, rgb(217 164 65 / 0.09) 1px, transparent 1.5px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+
+/* The big chip's pins: a row of short copper leads on each side. */
+.boot-pins {
+  position: absolute;
+  --pins: repeating-linear-gradient(var(--dir), var(--color-copper) 0 6px, transparent 6px 16px);
+}
+.boot-pins-top,
+.boot-pins-bottom {
+  --dir: to right;
+  left: 14px;
+  right: 8px;
+  height: 10px;
+  background: var(--pins);
+}
+.boot-pins-top {
+  top: -12px;
+}
+.boot-pins-bottom {
+  bottom: -12px;
+}
+.boot-pins-left,
+.boot-pins-right {
+  --dir: to bottom;
+  top: 14px;
+  bottom: 8px;
+  width: 10px;
+  background: var(--pins);
+}
+.boot-pins-left {
+  left: -12px;
+}
+.boot-pins-right {
+  right: -12px;
+}
+
+.boot-line {
+  animation: boot-line 180ms ease-out both;
+}
+@keyframes boot-line {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+}
+
+.boot-caret {
+  margin-left: 2px;
+  color: var(--color-copper);
+  animation: activity 0.9s steps(1) infinite;
+}
+
+/* The LED sign's screen flickers on like a warming-up display (it lasts as long as the spine's power-on flash). */
+.power-flicker {
+  animation: power-flicker 640ms linear;
+}
+@keyframes power-flicker {
+  0% {
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  14% {
+    opacity: 0.1;
+  }
+  24% {
+    opacity: 1;
+  }
+  30% {
+    opacity: 0.45;
+  }
+  38%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  #boot {
+    display: none;
+  }
+  html:not(.booted) body {
+    overflow: auto;
+  }
+  html .chip-led {
+    fill: var(--color-led);
+  }
+  .trace-draw,
+  .via-pop {
+    animation: none;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}

@@ -9,9 +9,9 @@ export const profile = {
   timeZone: "America/Chicago", // drives the live local time next to the location
   coordinates: "41.2565°N 95.9345°W",
   headline: "I build the whole tech stack. AI included.",
-  // Wrap words in **double asterisks** to make them bold.
+  // Wrap words in **double asterisks** to make them bold. It opens with my current role, so update it when that changes.
   intro:
-    "**Five years** building production systems with **Java/Spring**, **TypeScript/Angular** and **AI**, on a foundation in computer engineering and embedded firmware.",
+    "**Senior Project Engineer** in FinTech at **Union Pacific**. **Five years** building production systems with **Java/Spring**, **TypeScript/Angular** and **AI**, on a foundation in computer engineering and embedded firmware.",
   email: "osama.obeid@hotmail.com",
   github: "https://github.com/osama-atta",
   linkedin: "https://www.linkedin.com/in/osama-atta3",
@@ -30,8 +30,6 @@ export const ledFrames: string[][] = [
   ["HI, I'M", "OSAMA ATTA"],
   ["FULL-STACK", "ENGINEER"],
   ["BASED IN", "OMAHA, NE, USA"],
-  ["OPEN TO", "REMOTE ROLES"],
-  ["OR WILLING", "TO RELOCATE"],
 ];
 
 export type Metric = {

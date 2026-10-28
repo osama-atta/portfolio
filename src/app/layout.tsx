@@ -10,7 +10,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Osama Atta · Full-stack software engineer in Omaha, NE, USA",
   description:
-    "Osama Atta is a full-stack software engineer in Omaha, Nebraska, USA who builds the whole tech stack, AI included: Java/Spring, TypeScript/Angular, databases and AI-powered apps. Open to remote roles and relocation.",
+    "Osama Atta is a full-stack software engineer in Omaha, Nebraska, USA who builds the whole tech stack, AI included: Java/Spring, TypeScript/Angular, databases and AI-powered apps.",
 };
 
 export const viewport: Viewport = {

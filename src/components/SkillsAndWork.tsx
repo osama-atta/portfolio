@@ -1,25 +1,43 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { createPortal } from "react-dom";
 import { builds, projects, skillGroups, type Build, type Project, type SkillGroupId, type SkillId } from "@/data/content";
 import { SectionHeading } from "./SectionHeading";
 import { PoweredSection } from "./circuit/PoweredSection";
+import { POWER_LINE } from "./circuit/SpineProvider";
 
 const skillLabel = new Map<string, string>(skillGroups.flatMap((g) => g.skills.map((s) => [s.id, s.label] as const)));
 const groupSkills = new Map<SkillGroupId, SkillId[]>(skillGroups.map((g) => [g.id, g.skills.map((s) => s.id)]));
 const allWork: (Project | Build)[] = [...projects, ...builds];
 
+const POWER_INDEX = 3;
+const HEADER_SPACE = 80; // room for the pinned header, plus a little air
+const DOCK_SPACE = 150; // roughly how much of a phone screen the docked probe covers
+const PULSE_MS = 1600;
+
 /**
- * Scroll `el` into view if it isn't comfortably on screen already. Runs after
- * React has painted the new state, so a just-opened dropdown can be scrolled to.
+ * Scroll to a project card or build when the visitor asks for it (by clicking
+ * its name in the probe). It lands just below the pinned header, unless that
+ * would scroll far enough to power on the next section (Experience); then it
+ * stops just short of that. Does nothing if the card is already on screen.
+ * Runs after React has painted, so a just-opened dropdown can be measured.
  */
-function reveal(getEl: () => HTMLElement | null, fits: (r: DOMRect, vh: number) => boolean) {
+function scrollToWork(id: string, coveredBelow: number) {
   requestAnimationFrame(() =>
     requestAnimationFrame(() => {
-      const el = getEl();
-      if (!el || fits(el.getBoundingClientRect(), window.innerHeight)) return;
+      const el = document.getElementById(`project-${id}`);
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const vh = window.innerHeight;
+      if (r.top >= HEADER_SPACE && r.bottom <= vh - coveredBelow) return;
+      let top = window.scrollY + r.top - HEADER_SPACE;
+      // The next section powers on when its branch reaches POWER_LINE down the screen; stay 24px above that.
+      const next = document.querySelector<HTMLElement>(`[data-branch="${POWER_INDEX + 1}"]`);
+      if (next) top = Math.min(top, window.scrollY + next.getBoundingClientRect().top - vh * POWER_LINE - 24);
+      if (Math.abs(top - window.scrollY) < 4) return;
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+      window.scrollTo({ top, behavior: reduced ? "auto" : "smooth" });
     }),
   );
 }
@@ -35,8 +53,13 @@ type Selection =
  * A board of skill "pads", grouped by area, above the work. Each group folds
  * open and closed (they start closed, so the section stays short). It works both ways:
  * - click a skill (or a group's count) to light up every project that used it;
- * - click a project to light up the pads it used (hovering previews it); the
- *   groups holding those skills open up so you can see them.
+ * - click a project to light up the pads it used (hovering previews it). Closed
+ *   groups list their lit skills on their one-line preview.
+ * Clicking never moves the page. Instead, the "probe" strip under the board
+ * shows what the pick connects to: the projects and builds that use a skill, or
+ * a project's skills. Clicking a project's name there scrolls to its card (the
+ * only scroll, and only when asked). On phones the probe docks to the bottom of
+ * the screen while something is picked and this section is on screen.
  * Featured projects get full cards; the rest sit in a "more builds" dropdown.
  */
 export function SkillsAndWork() {
@@ -44,7 +67,9 @@ export function SkillsAndWork() {
   const [selected, setSelected] = useState<Selection>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<ReadonlySet<SkillGroupId>>(() => new Set());
-  const boardRef = useRef<HTMLDivElement>(null);
+  const [pulse, setPulse] = useState<string | null>(null); // the card just scrolled to, briefly outlined
+  const [inView, setInView] = useState(false); // is this section on screen? (for the phone dock)
+  const pulseTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const openGroup = (ids: SkillGroupId[]) => setOpenGroups((cur) => new Set([...cur, ...ids]));
   const flipGroup = (id: SkillGroupId) =>
@@ -55,7 +80,18 @@ export function SkillsAndWork() {
       return next;
     });
   const anyOpen = openGroups.size > 0;
-  const groupsOf = (skills: readonly SkillId[]) => skillGroups.filter((g) => g.skills.some((s) => skills.includes(s.id))).map((g) => g.id);
+
+  // Track whether the section is on screen, so the phone's docked probe only shows while you're here.
+  useEffect(() => {
+    const section = document.getElementById("work");
+    if (!section) return;
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting));
+    observer.observe(section);
+    return () => {
+      observer.disconnect();
+      clearTimeout(pulseTimer.current);
+    };
+  }, []);
 
   // If someone follows a link to a build in the dropdown (e.g. #project-telemetry), open it.
   useEffect(() => {
@@ -97,27 +133,21 @@ export function SkillsAndWork() {
         ? skillGroups.find((g) => g.id === selected.id)?.label
         : selectedWork?.title;
 
-  // Select (or unselect) something, then scroll to what it lit up: picking a
-  // skill or group scrolls to the first project that uses it, and picking a
-  // project scrolls back up to the skill board.
+  // Select (or unselect) something. The page doesn't move; the probe shows what it connects to.
   const toggle = (next: NonNullable<Selection>) => {
     const same = selected !== null && selected.kind === next.kind && selected.id === next.id;
     setSelected(same ? null : next);
-    if (same) return;
+    if (!same && next.kind === "group") openGroup([next.id]);
+  };
 
-    if (next.kind === "project") {
-      // Open the groups that hold this project's skills, so they're visible when they light up.
-      openGroup(groupsOf(allWork.find((w) => w.id === next.id)?.skills ?? []));
-      reveal(() => boardRef.current, (r, vh) => r.top >= 64 && r.bottom <= vh); // 64: below the pinned header
-      return;
-    }
-    if (next.kind === "group") openGroup([next.id]);
-    const picked: SkillId[] = next.kind === "skill" ? [next.id] : (groupSkills.get(next.id) ?? []);
-    const usesPicked = (w: Project | Build) => w.skills.some((s) => picked.includes(s));
-    const first = projects.find(usesPicked) ?? builds.find(usesPicked);
-    if (!first) return;
-    if (builds.includes(first as Build)) setMoreOpen(true);
-    reveal(() => document.getElementById(`project-${first.id}`), (r, vh) => r.top >= 80 && r.bottom <= vh);
+  // From the probe: go to a project's card (opening the builds dropdown if it's in there) and outline it for a moment.
+  const goToWork = (id: string) => {
+    if (builds.some((b) => b.id === id)) setMoreOpen(true);
+    const phone = window.matchMedia("(max-width: 639px)").matches;
+    scrollToWork(id, phone ? DOCK_SPACE : 0);
+    setPulse(id);
+    clearTimeout(pulseTimer.current);
+    pulseTimer.current = setTimeout(() => setPulse(null), PULSE_MS);
   };
 
   // Projects preview their skills on hover/focus, and pin them on click (or Enter/Space).
@@ -138,43 +168,101 @@ export function SkillsAndWork() {
     },
   });
 
+  // What the probe lists: for a skill or group, the work that uses it (click to go there);
+  // for a project, its skills (click to probe that skill instead).
+  const chips: { key: string; label: string; pre?: string; post?: string; strong: boolean; onClick: () => void }[] = !selected
+    ? []
+    : selected.kind === "project"
+      ? (selectedWork?.skills ?? []).map((id) => ({
+          key: id,
+          label: skillLabel.get(id) ?? id,
+          strong: false,
+          onClick: () => toggle({ kind: "skill", id }),
+        }))
+      : [
+          ...projects.filter(uses).map((p) => ({ key: p.id, label: p.title, pre: p.tag.slice(0, 2), strong: true, onClick: () => goToWork(p.id) })),
+          ...builds.filter(uses).map((b) => ({ key: b.id, label: b.title, post: "build", strong: false, onClick: () => goToWork(b.id) })),
+        ];
+  const featuredMatches = projects.filter(uses).length;
+  const probeSub = !selected
+    ? "Pick a skill or a project to see what it connects to."
+    : selected.kind === "project"
+      ? `Uses ${chips.length} ${chips.length === 1 ? "skill" : "skills"}, lit on the board`
+      : matching
+        ? `Used in ${featuredMatches} featured ${featuredMatches === 1 ? "project" : "projects"} and ${matchingBuilds} more ${matchingBuilds === 1 ? "build" : "builds"}`
+        : "Not in a project on this page yet";
+
+  const probe = (variant: "inline" | "dock") => {
+    const dock = variant === "dock";
+    return (
+      <div
+        role="status"
+        className={
+          dock
+            ? "fixed inset-x-0 bottom-0 z-30 flex flex-col gap-2 border-t border-line-strong bg-board/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_24px_-10px_rgb(0_0_0/0.85)] backdrop-blur-md"
+            : `flex flex-col gap-2.5 rounded-[10px] border bg-board px-4 py-3 transition-colors duration-200 ${selected ? "border-line-strong" : "border-line"}`
+        }
+      >
+        <div className="flex min-h-7 items-center gap-2.5 font-mono text-xs tracking-[0.08em]">
+          <span
+            aria-hidden="true"
+            className={`size-2 flex-none rounded-full transition-all duration-200 ${selected ? "bg-led shadow-[0_0_8px_var(--color-led)]" : "bg-line-strong"}`}
+          />
+          <span className="text-copper">PROBE</span>
+          {selected && (
+            <>
+              <span aria-hidden="true" className="text-line-strong">
+                ·
+              </span>
+              <span className="truncate uppercase text-ink">{selectedName}</span>
+            </>
+          )}
+          {!dock && <span className="truncate font-sans text-[13px] tracking-normal text-dim">{probeSub}</span>}
+          {selected && (
+            <button
+              type="button"
+              onClick={() => setSelected(null)}
+              aria-label="Clear the probe"
+              className="ml-auto min-h-8 flex-none cursor-pointer rounded border-0 bg-transparent px-1.5 font-mono text-xs text-dim hover:text-ink"
+            >
+              ✕{dock ? "" : " CLEAR"}
+            </button>
+          )}
+        </div>
+        {dock && <p className="m-0 text-[13px] text-muted">{probeSub}</p>}
+        {chips.length > 0 && (
+          <ul className={`m-0 flex list-none gap-2 p-0 ${dock ? "-mx-4 overflow-x-auto px-4 pb-0.5" : "flex-wrap"}`}>
+            {chips.map((c) => (
+              <li key={c.key} className="flex-none">
+                <button
+                  type="button"
+                  onClick={c.onClick}
+                  className={`inline-flex min-h-9 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border px-3 font-mono text-xs transition-colors hover:border-copper ${
+                    c.strong ? "border-copper/70 bg-copper/10 text-ink" : "border-line-strong bg-pad text-soft"
+                  }`}
+                >
+                  {c.pre && <span className="text-copper">{c.pre}</span>}
+                  {c.label}
+                  {c.post && <span className="text-dim">· {c.post}</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  };
+
   return (
     <PoweredSection index={3} id="work" className="flex flex-col gap-6">
       <SectionHeading eyebrow="A3 · Skill matrix" title="Skills & Projects" badgeFor={3} />
 
-      <div ref={boardRef} className="flex scroll-mt-20 flex-col gap-4 rounded-[14px] border border-line bg-panel p-4 sm:p-6">
+      <div className="flex flex-col gap-4 rounded-[14px] border border-line bg-panel p-4 sm:p-6">
         <div className="flex min-h-11 flex-wrap items-center justify-between gap-3">
-          <p className="m-0 text-[15px] text-muted" aria-live="polite">
-            {selected?.kind === "project" ? (
-              <>
-                <span className="font-semibold text-copper">{selectedName}</span> uses{" "}
-                {selectedSkills?.length === 1 ? "1 skill" : `${selectedSkills?.length ?? 0} skills`}, lit up below.
-              </>
-            ) : selected ? (
-              matching ? (
-                <>
-                  <span className="font-semibold text-copper">{selectedName}</span> shows up in{" "}
-                  {matching === 1 ? "1 project" : `${matching} projects`} below.
-                </>
-              ) : (
-                <>
-                  <span className="font-semibold text-copper">{selectedName}</span> isn&rsquo;t in a project below yet.
-                </>
-              )
-            ) : (
-              "Open a group to see its skills. Click a skill, or a group’s count, to light up the work that uses it."
-            )}
+          <p className="m-0 text-[15px] text-muted">
+            Open a group to see its skills. Click a skill, or a group&rsquo;s count, to see the work that uses it.
           </p>
           <span className="flex gap-2">
-            {selected && (
-              <button
-                type="button"
-                onClick={() => setSelected(null)}
-                className="min-h-10 rounded-md border border-line-strong bg-pad px-3.5 font-mono text-sm text-ink hover:border-copper"
-              >
-                ✕ Clear
-              </button>
-            )}
             <button
               type="button"
               onClick={() => setOpenGroups(anyOpen ? new Set() : new Set(skillGroups.map((g) => g.id)))}
@@ -281,7 +369,11 @@ export function SkillsAndWork() {
             );
           })}
         </div>
+
+        {/* The probe: inline under the board from 640px up. On phones it docks to the bottom instead (below). */}
+        <div className="max-sm:hidden">{probe("inline")}</div>
       </div>
+      {inView && selected && createPortal(<div className="sm:hidden">{probe("dock")}</div>, document.body)}
 
       <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h3 className="m-0 font-mono text-[13px] font-normal uppercase tracking-[0.1em] text-copper">Featured</h3>
@@ -291,7 +383,7 @@ export function SkillsAndWork() {
         {projects.map((p) => {
           const usesSelected = uses(p);
           const dimmed = selected !== null && !usesSelected && active !== p.id;
-          const highlighted = active === p.id || usesSelected;
+          const highlighted = active === p.id || usesSelected || pulse === p.id;
           return (
             <article
               key={p.id}
@@ -299,7 +391,13 @@ export function SkillsAndWork() {
               {...workProps(p.id)}
               className={`relative flex scroll-mt-24 cursor-pointer flex-col gap-2.5 rounded-[14px] border-2 bg-panel p-6 transition-all duration-300 target:border-copper target:shadow-[0_0_0_2px_var(--color-copper),0_0_28px_-6px_var(--color-copper)] ${
                 highlighted ? "border-copper" : "border-line"
-              } ${usesSelected ? "shadow-[0_0_24px_-8px_var(--color-copper)]" : ""} ${dimmed ? "opacity-40" : "opacity-100"}`}
+              } ${
+                pulse === p.id
+                  ? "shadow-[0_0_0_2px_var(--color-copper),0_0_28px_-6px_var(--color-copper)]"
+                  : usesSelected
+                    ? "shadow-[0_0_24px_-8px_var(--color-copper)]"
+                    : ""
+              } ${dimmed && pulse !== p.id ? "opacity-40" : "opacity-100"}`}
             >
               {/* Status LED: lights when this project uses the selected skill. */}
               <span
@@ -356,16 +454,16 @@ export function SkillsAndWork() {
         >
           {builds.map((b) => {
             const usesSelected = uses(b);
-            const highlighted = active === b.id || usesSelected;
-            const dimmed = selected !== null && !usesSelected && active !== b.id;
+            const highlighted = active === b.id || usesSelected || pulse === b.id;
+            const dimmed = selected !== null && !usesSelected && active !== b.id && pulse !== b.id;
             return (
               <li
                 key={b.id}
                 id={`project-${b.id}`}
                 {...workProps(b.id)}
-                className={`grid scroll-mt-24 cursor-pointer grid-cols-[12px_minmax(0,1fr)_auto] items-start gap-x-3.5 border-b border-line py-4 transition-opacity duration-300 ${
+                className={`grid scroll-mt-24 cursor-pointer grid-cols-[12px_minmax(0,1fr)_auto] items-start gap-x-3.5 rounded-md border-b border-line py-4 transition-[opacity,box-shadow] duration-300 ${
                   dimmed ? "opacity-40" : "opacity-100"
-                }`}
+                } ${pulse === b.id ? "shadow-[0_0_0_2px_var(--color-copper)]" : ""}`}
               >
                 <span
                   aria-hidden="true"

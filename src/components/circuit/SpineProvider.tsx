@@ -41,6 +41,9 @@ export function usePower(index: number) {
   };
 }
 
+/** A section powers on once its branch is this far down the screen (0.62 = 62% of the way down). */
+export const POWER_LINE = 0.62;
+
 const FLASH_MS = 650;
 // After the boot screen, the current creeps down from the chip instead of
 // appearing all at once: it waits RAMP_DELAY_MS, then travels RAMP_SPEED px/ms.
@@ -88,7 +91,7 @@ export function SpineProvider({ children }: { children: ReactNode }) {
 
       const vh = window.innerHeight || 800;
       const atBottom = wrapRect.bottom <= vh + 8; // the last sections can't reach the 62% line, so power everything
-      const target = reduced || atBottom ? Infinity : vh * 0.62 - wrapRect.top;
+      const target = reduced || atBottom ? Infinity : vh * POWER_LINE - wrapRect.top;
       let fillLen = Math.max(0, Math.min(trackLen, target - trackTop));
       if (ramping) {
         const now = performance.now();
@@ -143,7 +146,14 @@ export function SpineProvider({ children }: { children: ReactNode }) {
     window.addEventListener(BOOT_EVENT, onBoot);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", schedule);
+    // Re-measure whenever the page's content changes height without a scroll, e.g. opening or
+    // closing the "more builds" list or a skill group. Otherwise the trace would still end where
+    // the last section used to be, and sections could stay powered (or not) until the next scroll.
+    const content = wrapRef.current;
+    const resized = new ResizeObserver(schedule);
+    if (content) resized.observe(content);
     return () => {
+      resized.disconnect();
       cancelAnimationFrame(frame);
       clearTimeout(settle);
       clearTimeout(flashTimer);

@@ -17,9 +17,9 @@ export function Contact() {
           <span aria-hidden="true" className="size-2.5 rounded-full bg-led shadow-[0_0_10px_var(--led-glow)]" />
           J1 · I/O header
         </span>
-        <h2 className="m-0 max-w-[760px] font-display text-[27px] leading-tight max-[379px]:text-[24px] font-bold sm:text-[clamp(32px,4.5vw,48px)] sm:leading-normal">Have a problem worth solving? Let’s talk.</h2>
+        <h2 className="m-0 max-w-[760px] font-display text-[27px] leading-tight max-[379px]:text-[24px] font-bold sm:text-[clamp(32px,4.5vw,48px)] sm:leading-normal">Let’s build something together.</h2>
         <p className="m-0 max-w-[560px] text-[15px] leading-relaxed text-muted sm:text-[17px]">
-          Based in {profile.location} (Central Time). Open to remote roles and relocation.
+          Always happy to talk anything tech.
         </p>
         <div className="grid w-full grid-cols-2 gap-2.5 pt-1 text-center sm:flex sm:w-auto sm:flex-wrap sm:justify-center sm:gap-3 sm:pt-2">
           <a href={`mailto:${profile.email}`} className="col-span-2 rounded-md bg-copper px-[22px] py-3.5 text-base font-semibold text-board no-underline hover:brightness-110">
@@ -37,7 +37,7 @@ export function Contact() {
           <span aria-hidden="true" className="grid size-3.5 place-items-center rounded-full border border-dim">
             <span className="size-1 rounded-full bg-dim" />
           </span>
-          {/* Phones show just the coordinates (the city is in the line above) so it fits on one line. */}
+          {/* Phones show just the coordinates (the city is in the header) so it fits on one line. */}
           <span className="hidden sm:inline">{profile.location.toUpperCase()} · </span>
           {profile.coordinates}
         </span>

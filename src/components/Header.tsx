@@ -21,7 +21,7 @@ export function Header() {
         <ChipLogo spineOrigin designator="U1" />
         <span className="flex min-w-0 flex-col gap-1">
           <span>{profile.name}</span>
-          {/* Role and city: one line on wider screens; on phones, two lines with the local time. */}
+          {/* Role, city and the local time: one line on wider screens; on phones, two lines. */}
           <span className="flex flex-col gap-0.5 font-mono text-xs font-normal text-muted sm:flex-row sm:items-center sm:gap-2">
             {/* On the narrowest phones the shorter role leaves room for the menu button. */}
             <span className="max-[379px]:hidden">{profile.eyebrow}</span>
@@ -32,7 +32,7 @@ export function Header() {
             <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
               <PinIcon className="size-3" />
               {profile.location}
-              <span className="sm:hidden">
+              <span>
                 <span aria-hidden="true" className="text-line-strong">
                   {" "}
                   ·{" "}

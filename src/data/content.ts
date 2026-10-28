@@ -23,7 +23,6 @@ export const profile = {
 export const ledFrames: string[][] = [
   ["HI, I'M", "OSAMA ATTA"],
   ["FULL-STACK", "ENGINEER"],
-  ["NEW STACK?", "I LEARN FAST"],
   ["BASED IN", "OMAHA, NE"],
   ["OPEN TO", "REMOTE ROLES"],
   ["OR WILLING", "TO RELOCATE"],

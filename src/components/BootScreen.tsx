@@ -24,7 +24,7 @@ const LINES: [label: string, status: string][] = [
   ["LOAD java.spring", "OK"],
   ["LOAD typescript.angular", "OK"],
   ["LOAD ai.toolchain", "OK"],
-  ["GPS LOCK · OMAHA, NE", "OK"],
+  ["GPS LOCK · OMAHA, NE, USA", "OK"],
   ["TZ · CENTRAL TIME", "OK"],
   ["RAIL 3V3", "STABLE"],
 ];

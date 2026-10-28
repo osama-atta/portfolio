@@ -51,7 +51,7 @@ export function StickyHeader() {
           <span className="flex min-w-0 flex-col lg:flex-row lg:items-center lg:gap-3">
             <span className="font-display text-base font-bold lg:text-lg">{profile.name}</span>
             <span aria-hidden="true" className="hidden h-4 w-px bg-line-strong lg:block" />
-            <span className="flex items-center gap-1.5 truncate font-mono text-[11px] text-muted lg:gap-2 lg:text-[12.5px]">
+            <span className="flex items-center gap-1.5 truncate font-mono text-[11px] text-muted max-[399px]:gap-1 max-[399px]:text-[10px] lg:gap-2 lg:text-[12.5px]">
               <span className="truncate">
                 <span className="lg:hidden">{profile.roleShort}</span>
                 <span className="hidden lg:inline">{profile.eyebrow}</span>

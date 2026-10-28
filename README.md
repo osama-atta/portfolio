@@ -54,6 +54,7 @@ src/
     layout.tsx         Fonts, metadata, <html>/<body>
     page.tsx           The page: stacks the sections in order
     globals.css        Tailwind import + design tokens
+    icon.svg           Favicon: the OA chip with its LED lit (icon.ico for older browsers, apple-icon.png for iPhone home screens)
   components/
     circuit/
       SpineProvider.tsx  The spine: tracks scroll, fills the trace, decides which sections have power
@@ -73,6 +74,7 @@ src/
     StickyHeader.tsx   Slim see-through bar with name, role and city that slides in once the header scrolls away
     HeaderMenu.tsx     The header's menu button below 1024px (MenuButton.tsx has the icon and close-on-Escape/outside-click logic)
     ResumeViewer.tsx   Preview window for the résumé, with Open in new tab and Download PDF
+    FaviconLed.tsx     Turns the favicon's LED off while the tab is in the background
     nav.ts             The page's main links, shared by the header, its menu and the pinned bar
     Header, Hero, Contact, SectionHeading, PinIcon, LocalTime
   data/content.ts      All the words and numbers

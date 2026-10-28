@@ -5,7 +5,7 @@ export const profile = {
   name: "Osama Atta",
   eyebrow: "Full-stack software engineer",
   roleShort: "Full-stack engineer", // where space is tight (the pinned header on phones)
-  location: "Omaha, NE",
+  location: "Omaha, NE, USA",
   timeZone: "America/Chicago", // drives the live local time next to the location
   coordinates: "41.2565°N 95.9345°W",
   headline: "I build the whole tech stack. AI included.",
@@ -29,7 +29,7 @@ export const profile = {
 export const ledFrames: string[][] = [
   ["HI, I'M", "OSAMA ATTA"],
   ["FULL-STACK", "ENGINEER"],
-  ["BASED IN", "OMAHA, NE"],
+  ["BASED IN", "OMAHA, NE, USA"],
   ["OPEN TO", "REMOTE ROLES"],
   ["OR WILLING", "TO RELOCATE"],
 ];

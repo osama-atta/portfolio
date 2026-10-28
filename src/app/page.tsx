@@ -9,6 +9,7 @@ import { SkillsAndWork } from "@/components/SkillsAndWork";
 import { Experience } from "@/components/Experience";
 import { Contact } from "@/components/Contact";
 import { ResumeViewer } from "@/components/ResumeViewer";
+import { FaviconLed } from "@/components/FaviconLed";
 
 /*
   Each section has a power index (0–6): display, hero, now, skills,
@@ -38,6 +39,7 @@ export default function Home() {
         </div>
       </SpineProvider>
       <ResumeViewer />
+      <FaviconLed />
     </div>
   );
 }

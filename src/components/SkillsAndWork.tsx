@@ -263,6 +263,16 @@ export function SkillsAndWork() {
             Open a group to see its skills. Click a skill, or a group&rsquo;s count, to see the work that uses it.
           </p>
           <span className="flex gap-2">
+            {/* Always takes up its space (just hidden when nothing is picked), so showing it never shifts the board. */}
+            <button
+              type="button"
+              onClick={() => setSelected(null)}
+              aria-hidden={!selected}
+              tabIndex={selected ? undefined : -1}
+              className={`min-h-10 rounded-md border border-line-strong bg-pad px-3.5 font-mono text-sm text-ink hover:border-copper ${selected ? "" : "invisible"}`}
+            >
+              ✕ Clear
+            </button>
             <button
               type="button"
               onClick={() => setOpenGroups(anyOpen ? new Set() : new Set(skillGroups.map((g) => g.id)))}

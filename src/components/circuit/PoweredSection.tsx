@@ -29,7 +29,7 @@ export function PoweredSection({ index, as: Tag = "section", id, className = "",
   return (
     <Tag
       id={id}
-      className={`relative scroll-mt-6 transition-[opacity,filter] duration-[600ms] ease-out ${className}`}
+      className={`relative scroll-mt-20 transition-[opacity,filter] duration-[600ms] ease-out ${className}`}
       style={{
         opacity: on ? 1 : 0.32,
         filter: flashing ? "brightness(1.35) saturate(1.2)" : on ? "brightness(1) saturate(1)" : "brightness(0.75) saturate(0.2)",

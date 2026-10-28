@@ -86,11 +86,53 @@ function glyphColumns(text: string): boolean[][] {
   return cols;
 }
 
-/** Render up to two centered lines of text onto a cols × rows grid of LEDs (true = lit). */
+/** How many characters fit across a grid `cols` LEDs wide. */
+const charsThatFit = (cols: number) => Math.floor((cols + 1) / (GLYPH_COLS + 1));
+
+/**
+ * Re-wrap a message into lines of at most `maxChars` characters, breaking at
+ * spaces (or after a hyphen, so FULL-STACK becomes FULL- / STACK). Used to fit
+ * the two-line messages onto the narrower phone display.
+ */
+export function wrapLines(lines: string[], maxChars: number): string[] {
+  const words = lines
+    .join(" ")
+    .split(" ")
+    .filter(Boolean)
+    .flatMap((w) => {
+      const hyphen = w.indexOf("-");
+      return w.length > maxChars && hyphen > 0 ? [w.slice(0, hyphen + 1), w.slice(hyphen + 1)] : [w];
+    });
+  const out: string[] = [];
+  let line = "";
+  for (const word of words) {
+    const joined = !line ? word : line.endsWith("-") ? line + word : `${line} ${word}`;
+    if (joined.length <= maxChars || !line) line = joined;
+    else {
+      out.push(line);
+      line = word;
+    }
+  }
+  if (line) out.push(line);
+  return out;
+}
+
+/** Top row of each line: two lines sit at fixed rows; more lines are stacked 8 rows apart and centered. */
+function lineTops(count: number, rows: number, maxLines: number): number[] {
+  if (maxLines <= 2) return count > 1 ? [1, rows - 8] : [Math.floor((rows - GLYPH_ROWS) / 2)];
+  const first = Math.floor((rows - (count * 8 - 1)) / 2);
+  return Array.from({ length: count }, (_, i) => first + i * 8);
+}
+
+/**
+ * Render centered lines of text onto a cols × rows grid of LEDs (true = lit).
+ * Lines that are too wide for the grid are re-wrapped onto more lines.
+ */
 export function textToGrid(lines: string[], cols: number, rows: number): boolean[][] {
   const grid = Array.from({ length: rows }, () => new Array<boolean>(cols).fill(false));
-  const shown = lines.slice(0, 2);
-  const tops = shown.length > 1 ? [1, rows - 8] : [Math.floor((rows - GLYPH_ROWS) / 2)];
+  const fits = lines.every((l) => l.length <= charsThatFit(cols));
+  const shown = fits ? lines.slice(0, 2) : wrapLines(lines, charsThatFit(cols)).slice(0, Math.floor((rows + 1) / 8));
+  const tops = lineTops(shown.length, rows, fits ? 2 : shown.length);
   shown.forEach((line, li) => {
     const bits = glyphColumns(line);
     const startCol = Math.floor((cols - bits.length) / 2);
@@ -112,14 +154,15 @@ export function textToGrid(lines: string[], cols: number, rows: number): boolean
  */
 export function layoutFrames(frames: string[][]): LedLayout {
   const longest = Math.max(1, ...frames.flat().map((line) => line.length));
-  const twoLine = frames.some((f) => f.length > 1);
+  const maxLines = Math.max(1, ...frames.map((f) => f.length));
   const cols = longest * (GLYPH_COLS + 1) - 1 + 4; // 2 blank columns each side
-  const rows = twoLine ? 18 : 9;
+  // One or two lines keep the original sign shape; more lines stack 8 rows apart.
+  const rows = maxLines > 2 ? maxLines * 8 + 1 : maxLines > 1 ? 18 : 9;
 
   const laidOut = frames.map((lines) => {
-    const tops = lines.length > 1 ? [1, 10] : [Math.floor((rows - GLYPH_ROWS) / 2)];
+    const tops = lineTops(lines.length, rows, maxLines);
     const runs: LedRun[] = [];
-    lines.slice(0, 2).forEach((line, li) => {
+    lines.forEach((line, li) => {
       const bits = glyphColumns(line);
       const startCol = Math.floor((cols - bits.length) / 2);
       for (let r = 0; r < GLYPH_ROWS; r++) {

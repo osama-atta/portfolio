@@ -27,7 +27,7 @@ Other scripts:
 
 Almost everything the site says lives in **`src/data/content.ts`**: your intro, the LED messages, metrics, skills, projects, experience and education. Change it there and every component picks it up.
 
-- **LED messages:** `ledFrames` takes up to two lines per message. The display sizes itself to the longest line. Visitors can step through them (tap or swipe the screen, the ◀ ▶ buttons, the arrow keys, or one of the message LEDs); a picked message stays up for `MANUAL_HOLD_MS` in `LedModule.tsx` before the sign carries on.
+- **LED messages:** `ledFrames` takes up to two lines per message. The display sizes itself to the longest line. Visitors can step through them (tap or swipe the screen, the ◀ ▶ buttons, the arrow keys, or one of the message LEDs); a picked message stays up for `MANUAL_HOLD_MS` in `LedModule.tsx` before the sign carries on. On phones the sign re-wraps each message onto shorter lines (`PHONE_CHARS_PER_LINE`) so the LEDs are bigger, the controls share one row with the switch, and the game gets a taller portrait screen (`PHONE_GAME`). Switching between messages and the game fades the screen out, resizes it if needed, and fades it back in.
 - **Skills and work:** `skillGroups` holds the skill pads, grouped by area (set `wide: true` for a group that spans the full row). `projects` are the six featured cards; `builds` are the one-line entries in the "more builds" dropdown. Each lists the skill IDs it used: those decide which pads light up on hover, and which work lights up when a skill or a whole group (its count) is clicked. The groups fold open and closed and start closed; clicking a project opens the groups its skills are in.
 - **What I'm working on now:** `nowItems` holds the four channels. A `counter` with `kind: "since"` counts months from a date (time in role); `kind: "until"` counts down to one (the certificate). They're worked out in the visitor's browser, so they stay current without redeploying.
 - **Probe readouts:** each metric has a `probe` block (what was measured, role, dates, and the `projectId` its "Trace it to the project" link jumps to).
@@ -68,7 +68,8 @@ src/
     SevenSegment.tsx   A single seven-segment digit
     SkillsAndWork.tsx  Grouped skill pads, featured cards and a "more builds" dropdown: click a skill or group to light its work, hover work to light its skills
     Experience.tsx     Roles whose LEDs light in sequence when powered
-    Header, Hero, Contact, SectionHeading
+    StickyHeader.tsx   Slim see-through bar with name, role and city that slides in once the header scrolls away
+    Header, Hero, Contact, SectionHeading, PinIcon, LocalTime
   data/content.ts      All the words and numbers
   hooks/usePrefersReducedMotion.ts
   lib/ledFont.ts       5×7 LED font and frame layout math

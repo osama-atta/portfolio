@@ -1,6 +1,7 @@
 import { SpineProvider } from "@/components/circuit/SpineProvider";
 import { BootScreen } from "@/components/BootScreen";
 import { Header } from "@/components/Header";
+import { StickyHeader } from "@/components/StickyHeader";
 import { DisplayModule } from "@/components/DisplayModule";
 import { Hero } from "@/components/Hero";
 import { NowSection } from "@/components/NowSection";
@@ -23,6 +24,7 @@ export default function Home() {
       <BootScreen />
       <SpineProvider>
         <Header />
+        <StickyHeader />
         <div className="flex flex-col gap-24 pt-3" style={{ marginLeft: "calc(var(--rail) + 20px)" }}>
           <main className="flex flex-col gap-24">
             <DisplayModule />

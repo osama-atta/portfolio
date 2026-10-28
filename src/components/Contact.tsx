@@ -7,7 +7,7 @@ export function Contact() {
     <PoweredSection index={6} as="div" branch="edge" branchTop={56}>
       <footer
         id="contact"
-        className="flex scroll-mt-6 flex-col items-center gap-[18px] rounded-[18px] border border-line bg-panel px-8 py-12 text-center"
+        className="flex scroll-mt-20 flex-col items-center gap-[18px] rounded-[18px] border border-line bg-panel px-8 py-12 text-center"
       >
         <span className="inline-flex items-center gap-2.5 font-mono text-[15px] text-copper">
           <span aria-hidden="true" className="size-2.5 rounded-full bg-led shadow-[0_0_10px_var(--led-glow)]" />

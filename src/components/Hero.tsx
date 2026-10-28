@@ -2,6 +2,7 @@ import { profile } from "@/data/content";
 import { withBasePath } from "@/lib/basePath";
 import { PoweredSection } from "./circuit/PoweredSection";
 import { LocalTime } from "./LocalTime";
+import { PinIcon } from "./PinIcon";
 
 /** Turns **bold** markers in a sentence into <strong> text. */
 function withBold(text: string) {
@@ -23,10 +24,7 @@ export function Hero() {
         <p className="m-0 font-mono text-[15px] text-copper">{profile.eyebrow}</p>
         {/* Where I am and what time it is there, so remote teams can place me. */}
         <p className="m-0 inline-flex flex-wrap items-center gap-x-2 rounded-2xl border border-line-strong bg-panel px-3 py-1 font-mono text-[13px] text-soft">
-          <svg aria-hidden="true" viewBox="0 0 16 16" className="size-3.5 flex-none text-copper">
-            <path d="M8 1.5a4.5 4.5 0 0 0-4.5 4.5c0 3.4 4.5 8.5 4.5 8.5s4.5-5.1 4.5-8.5A4.5 4.5 0 0 0 8 1.5Z" fill="currentColor" />
-            <circle cx="8" cy="6" r="1.7" fill="var(--color-board)" />
-          </svg>
+          <PinIcon />
           <span>{profile.location}</span>
           <span aria-hidden="true" className="text-dim">·</span>
           <LocalTime timeZone={profile.timeZone} fallback="Central Time" />

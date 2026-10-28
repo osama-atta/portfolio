@@ -4,6 +4,7 @@
 export const profile = {
   name: "Osama Atta",
   eyebrow: "Full-stack software engineer",
+  roleShort: "Full-stack engineer", // where space is tight (the pinned header on phones)
   location: "Omaha, NE",
   timeZone: "America/Chicago", // drives the live local time next to the location
   coordinates: "41.2565°N 95.9345°W",

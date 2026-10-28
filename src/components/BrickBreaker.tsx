@@ -36,7 +36,7 @@ type Game = {
 };
 
 const BRICK_W = 5;
-const BRICK_ROWS = 4;
+const BRICK_ROWS = 4; // default; a taller (phone) screen can ask for more
 const PADDLE_W = 11;
 const START_SPEED = 24; // cells per second
 const MAX_SPEED = 40;
@@ -47,13 +47,13 @@ const MAX_BOUNCE = (60 * Math.PI) / 180; // steepest angle off the paddle edge
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-function newGame(cols: number, rows: number): Game {
+function newGame(cols: number, rows: number, brickRows = BRICK_ROWS): Game {
   const perRow = Math.floor((cols + 1) / (BRICK_W + 1));
   const rowWidth = perRow * (BRICK_W + 1) - 1;
   const x0 = Math.floor((cols - rowWidth) / 2);
   const bricks: Brick[] = [];
   const cellToBrick = new Int16Array(rows * cols).fill(-1);
-  for (let r = 0; r < BRICK_ROWS; r++) {
+  for (let r = 0; r < brickRows; r++) {
     for (let i = 0; i < perRow; i++) {
       const brick = { x: x0 + i * (BRICK_W + 1), y: 1 + r, alive: true };
       for (let k = 0; k < BRICK_W; k++) cellToBrick[brick.y * cols + brick.x + k] = bricks.length;
@@ -223,11 +223,13 @@ function draw(ctx: CanvasRenderingContext2D, g: Game, cols: number, rows: number
 type Props = {
   cols: number;
   rows: number;
+  /** Rows of bricks to start with (more on the taller phone screen). */
+  brickRows?: number;
   onExit: () => void;
   onHud: (hud: Hud) => void;
 };
 
-export function BrickBreaker({ cols, rows, onExit, onHud }: Props) {
+export function BrickBreaker({ cols, rows, brickRows = BRICK_ROWS, onExit, onHud }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef<Game>(null);
@@ -240,11 +242,11 @@ export function BrickBreaker({ cols, rows, onExit, onHud }: Props) {
     onExitRef.current = onExit;
   });
 
-  const game = () => (gameRef.current ??= newGame(cols, rows));
+  const game = () => (gameRef.current ??= newGame(cols, rows, brickRows));
 
   const startOrLaunch = () => {
     const g = game();
-    if (g.status === "won" || g.status === "lost") gameRef.current = newGame(cols, rows);
+    if (g.status === "won" || g.status === "lost") gameRef.current = newGame(cols, rows, brickRows);
     else if (g.status === "ready") launch(g);
   };
 
@@ -271,7 +273,7 @@ export function BrickBreaker({ cols, rows, onExit, onHud }: Props) {
     const tick = (now: number) => {
       const dt = Math.min(0.033, (now - last) / 1000);
       last = now;
-      const g = (gameRef.current ??= newGame(cols, rows));
+      const g = (gameRef.current ??= newGame(cols, rows, brickRows));
       const keyDir = (keysRef.current.right ? 1 : 0) - (keysRef.current.left ? 1 : 0);
       step(g, dt, cols, rows, keyDir);
       draw(ctx, g, cols, rows, canvas.width, canvas.height, dpr, led);
@@ -289,7 +291,7 @@ export function BrickBreaker({ cols, rows, onExit, onHud }: Props) {
       cancelAnimationFrame(frame);
       observer.disconnect();
     };
-  }, [cols, rows]);
+  }, [cols, rows, brickRows]);
 
   const movePaddleTo = (clientX: number) => {
     const canvas = canvasRef.current;

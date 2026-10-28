@@ -108,7 +108,7 @@ export function SkillsAndWork() {
     if (next.kind === "project") {
       // Open the groups that hold this project's skills, so they're visible when they light up.
       openGroup(groupsOf(allWork.find((w) => w.id === next.id)?.skills ?? []));
-      reveal(() => boardRef.current, (r, vh) => r.top >= 0 && r.bottom <= vh);
+      reveal(() => boardRef.current, (r, vh) => r.top >= 64 && r.bottom <= vh); // 64: below the pinned header
       return;
     }
     if (next.kind === "group") openGroup([next.id]);
@@ -142,7 +142,7 @@ export function SkillsAndWork() {
     <PoweredSection index={3} id="work" className="flex flex-col gap-6">
       <SectionHeading eyebrow="A2 · Skill matrix" title="Skills & Projects" badgeFor={3} />
 
-      <div ref={boardRef} className="flex scroll-mt-6 flex-col gap-4 rounded-[14px] border border-line bg-panel p-4 sm:p-6">
+      <div ref={boardRef} className="flex scroll-mt-20 flex-col gap-4 rounded-[14px] border border-line bg-panel p-4 sm:p-6">
         <div className="flex min-h-11 flex-wrap items-center justify-between gap-3">
           <p className="m-0 text-[15px] text-muted" aria-live="polite">
             {selected?.kind === "project" ? (

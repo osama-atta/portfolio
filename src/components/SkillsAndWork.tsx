@@ -42,6 +42,25 @@ function scrollToWork(id: string, coveredBelow: number) {
   );
 }
 
+/**
+ * After a project card is picked: scroll up to the top of this section, so its heading sits just
+ * below the pinned header with the skill board under it. Scrolling up never reaches the next
+ * section, so there's no power-on limit to mind. Runs after React has painted, so groups that were
+ * just opened are already in place.
+ */
+function scrollToSectionTop() {
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      const section = document.getElementById("work");
+      if (!section) return;
+      const top = window.scrollY + section.getBoundingClientRect().top - HEADER_SPACE;
+      if (Math.abs(top - window.scrollY) < 4) return;
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top, behavior: reduced ? "auto" : "smooth" });
+    }),
+  );
+}
+
 /** What the visitor clicked: one skill, a whole group of them, or a project. */
 type Selection =
   | { kind: "skill"; id: SkillId }
@@ -55,10 +74,10 @@ type Selection =
  * - click a skill (or a group's count) to light up every project that used it;
  * - click a project to light up the pads it used (hovering previews it). Closed
  *   groups list their lit skills on their one-line preview.
- * Clicking never moves the page. Instead, the "probe" strip under the board
- * shows what the pick connects to: the projects and builds that use a skill, or
- * a project's skills. Clicking a project's name there scrolls to its card (the
- * only scroll, and only when asked). On phones the probe docks to the bottom of
+ * Picking a skill never moves the page. Instead, the "probe" strip under the
+ * board shows what it connects to: the projects and builds that use it. Clicking
+ * a project's name there scrolls to its card. Picking a project card opens the
+ * groups it uses and scrolls back up to the top of this section. On phones the probe docks to the bottom of
  * the screen while something is picked and this section is on screen.
  * Featured projects get full cards; the rest sit in a "more builds" dropdown.
  */
@@ -150,6 +169,18 @@ export function SkillsAndWork() {
     pulseTimer.current = setTimeout(() => setPulse(null), PULSE_MS);
   };
 
+  // Picking a project card (not unpicking it) opens the skill groups it uses and scrolls up to the top of the section.
+  const pickProject = (id: string) => {
+    const unpicking = selected?.kind === "project" && selected.id === id;
+    setActive(null);
+    toggle({ kind: "project", id });
+    if (unpicking) return;
+    const used = allWork.find((w) => w.id === id)?.skills ?? [];
+    const groups = skillGroups.filter((g) => g.skills.some((s) => used.includes(s.id))).map((g) => g.id);
+    openGroup(groups);
+    scrollToSectionTop();
+  };
+
   // Projects preview their skills while a mouse hovers them or the keyboard focuses them, and pin
   // them on click/tap (or Enter/Space). Taps don't preview: a phone treats a tap as hovering and
   // focusing too, and that preview would keep the skills lit after a second tap unpins them.
@@ -166,14 +197,12 @@ export function SkillsAndWork() {
     onBlur: () => setActive(null),
     onClick: (e: MouseEvent) => {
       if ((e.target as HTMLElement).closest("a")) return; // let links inside a card work normally
-      setActive(null);
-      toggle({ kind: "project", id });
+      pickProject(id);
     },
     onKeyDown: (e: KeyboardEvent) => {
       if (e.target !== e.currentTarget || (e.key !== "Enter" && e.key !== " ")) return;
       e.preventDefault();
-      setActive(null);
-      toggle({ kind: "project", id });
+      pickProject(id);
     },
   });
 

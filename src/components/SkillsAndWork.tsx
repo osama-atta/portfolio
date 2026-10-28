@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { builds, projects, skillGroups, type Build, type Project, type SkillGroupId, type SkillId } from "@/data/content";
 import { SectionHeading } from "./SectionHeading";
@@ -150,20 +150,29 @@ export function SkillsAndWork() {
     pulseTimer.current = setTimeout(() => setPulse(null), PULSE_MS);
   };
 
-  // Projects preview their skills on hover/focus, and pin them on click (or Enter/Space).
+  // Projects preview their skills while a mouse hovers them or the keyboard focuses them, and pin
+  // them on click/tap (or Enter/Space). Taps don't preview: a phone treats a tap as hovering and
+  // focusing too, and that preview would keep the skills lit after a second tap unpins them.
+  // Clicking also ends any preview, so unpinning with the mouse still over the card clears the board.
   const workProps = (id: string) => ({
     tabIndex: 0,
-    onMouseEnter: () => setActive(id),
-    onMouseLeave: () => setActive(null),
-    onFocus: () => setActive(id),
+    onPointerEnter: (e: PointerEvent) => {
+      if (e.pointerType === "mouse") setActive(id);
+    },
+    onPointerLeave: () => setActive(null),
+    onFocus: (e: FocusEvent<HTMLElement>) => {
+      if (e.currentTarget.matches(":focus-visible")) setActive(id); // keyboard focus only, not a click or tap
+    },
     onBlur: () => setActive(null),
     onClick: (e: MouseEvent) => {
       if ((e.target as HTMLElement).closest("a")) return; // let links inside a card work normally
+      setActive(null);
       toggle({ kind: "project", id });
     },
     onKeyDown: (e: KeyboardEvent) => {
       if (e.target !== e.currentTarget || (e.key !== "Enter" && e.key !== " ")) return;
       e.preventDefault();
+      setActive(null);
       toggle({ kind: "project", id });
     },
   });
@@ -276,14 +285,16 @@ export function SkillsAndWork() {
             <button
               type="button"
               onClick={() => setOpenGroups(anyOpen ? new Set() : new Set(skillGroups.map((g) => g.id)))}
-              className="min-h-10 rounded-md border border-line-strong bg-pad px-3.5 font-mono text-sm text-ink hover:border-copper"
+              // On phones this comes first, on the left; Clear appears to its right when something is picked.
+              className="min-h-10 rounded-md border border-line-strong bg-pad px-3.5 font-mono text-sm text-ink hover:border-copper max-sm:order-first"
             >
               {anyOpen ? "▸ Close all" : "▾ Open all"}
             </button>
           </span>
         </div>
 
-        <div className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {/* grid-cols-1 on phones too: without a set column width, a closed group's long line of lit skills would stretch the column off the screen instead of being cut off with "…". */}
+        <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {skillGroups.map((group) => {
             const groupOn = selected?.kind === "group" && selected.id === group.id;
             const open = openGroups.has(group.id);
@@ -292,7 +303,7 @@ export function SkillsAndWork() {
             return (
               <div
                 key={group.id}
-                className={`flex flex-col rounded-[10px] border bg-pad px-3.5 transition-[border-color,box-shadow] duration-200 ${
+                className={`flex min-w-0 flex-col rounded-[10px] border bg-pad px-3.5 transition-[border-color,box-shadow] duration-200 ${
                   "wide" in group && group.wide ? "col-span-full" : ""
                 } ${groupOn ? "border-copper shadow-[0_0_18px_-6px_var(--color-copper)]" : open ? "border-line-strong" : "border-line"} ${
                   open ? "pb-4" : "pb-2.5"
@@ -313,9 +324,18 @@ export function SkillsAndWork() {
                       aria-hidden="true"
                       className={`size-0 flex-none border-x-[5px] border-t-[7px] border-x-transparent border-t-copper transition-transform duration-200 ${open ? "" : "-rotate-90"}`}
                     />
-                    <span>{group.label}</span>
-                    {/* A lit LED when something in this group is lit, so you can tell even when it's closed. */}
-                    {lit.length > 0 && <span aria-hidden="true" className="size-2 flex-none rounded-full bg-led shadow-[0_0_8px_var(--color-led)]" />}
+                    {/* A lit LED when something in this group is lit, so you can tell even when it's closed. It sits
+                        inline after the last word, so it stays next to the name when a long name wraps onto two lines. */}
+                    <span>
+                      {/* The last word and the LED never wrap apart, so the LED can't end up on a line by itself. */}
+                      {group.label.slice(0, group.label.lastIndexOf(" ") + 1)}
+                      <span className="whitespace-nowrap">
+                        {group.label.slice(group.label.lastIndexOf(" ") + 1)}
+                        {lit.length > 0 && (
+                          <span aria-hidden="true" className="ml-2 inline-block size-2 rounded-full bg-led align-middle shadow-[0_0_8px_var(--color-led)]" />
+                        )}
+                      </span>
+                    </span>
                   </button>
                   {/* The count lights up everything in the group. */}
                   <button
@@ -357,7 +377,9 @@ export function SkillsAndWork() {
                           aria-pressed={selected?.kind === "skill" && selected.id === s.id}
                           onClick={() => toggle({ kind: "skill", id: s.id })}
                           className={[
-                            "inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 font-mono text-[13px] transition-all duration-200",
+                            // Top-aligned and left-aligned, so a long name that wraps on a phone reads like a bulleted line with
+                            // the LED beside its first line. The padding keeps one-line pads 36px tall, as before.
+                            "inline-flex min-h-9 cursor-pointer items-start gap-2 rounded-md border px-2.5 py-[7.25px] text-left font-mono text-[13px] transition-all duration-200",
                             on
                               ? "border-copper bg-copper text-board shadow-[0_0_14px_var(--color-copper)]"
                               : dim
@@ -367,9 +389,9 @@ export function SkillsAndWork() {
                         >
                           <span
                             aria-hidden="true"
-                            className={`size-2 rounded-full transition-all duration-200 ${on ? "bg-led shadow-[0_0_8px_var(--color-led)]" : "bg-line-strong"}`}
+                            className={`mt-[5.75px] size-2 flex-none rounded-full transition-all duration-200 ${on ? "bg-led shadow-[0_0_8px_var(--color-led)]" : "bg-line-strong"}`}
                           />
-                          {s.label}
+                          <span>{s.label}</span>
                         </button>
                       </li>
                     );

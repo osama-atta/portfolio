@@ -32,16 +32,30 @@ type Selection =
   | null;
 
 /**
- * A board of skill "pads", grouped by area, above the work. It works both ways:
- * - click a skill (or a group's name) to light up every project that used it;
- * - click a project to light up the pads it used (hovering previews it).
+ * A board of skill "pads", grouped by area, above the work. Each group folds
+ * open and closed (they start closed, so the section stays short). It works both ways:
+ * - click a skill (or a group's count) to light up every project that used it;
+ * - click a project to light up the pads it used (hovering previews it); the
+ *   groups holding those skills open up so you can see them.
  * Featured projects get full cards; the rest sit in a "more builds" dropdown.
  */
 export function SkillsAndWork() {
   const [active, setActive] = useState<string | null>(null); // hovered/focused project
   const [selected, setSelected] = useState<Selection>(null);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState<ReadonlySet<SkillGroupId>>(() => new Set());
   const boardRef = useRef<HTMLDivElement>(null);
+
+  const openGroup = (ids: SkillGroupId[]) => setOpenGroups((cur) => new Set([...cur, ...ids]));
+  const flipGroup = (id: SkillGroupId) =>
+    setOpenGroups((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const anyOpen = openGroups.size > 0;
+  const groupsOf = (skills: readonly SkillId[]) => skillGroups.filter((g) => g.skills.some((s) => skills.includes(s.id))).map((g) => g.id);
 
   // If someone follows a link to a build in the dropdown (e.g. #project-telemetry), open it.
   useEffect(() => {
@@ -92,9 +106,12 @@ export function SkillsAndWork() {
     if (same) return;
 
     if (next.kind === "project") {
+      // Open the groups that hold this project's skills, so they're visible when they light up.
+      openGroup(groupsOf(allWork.find((w) => w.id === next.id)?.skills ?? []));
       reveal(() => boardRef.current, (r, vh) => r.top >= 0 && r.bottom <= vh);
       return;
     }
+    if (next.kind === "group") openGroup([next.id]);
     const picked: SkillId[] = next.kind === "skill" ? [next.id] : (groupSkills.get(next.id) ?? []);
     const usesPicked = (w: Project | Build) => w.skills.some((s) => picked.includes(s));
     const first = projects.find(usesPicked) ?? builds.find(usesPicked);
@@ -145,43 +162,93 @@ export function SkillsAndWork() {
                 </>
               )
             ) : (
-              "Click a skill or a group to light up the work that uses it, or click a project to see its skills."
+              "Open a group to see its skills. Click a skill, or a group’s count, to light up the work that uses it."
             )}
           </p>
-          {selected && (
+          <span className="flex gap-2">
+            {selected && (
+              <button
+                type="button"
+                onClick={() => setSelected(null)}
+                className="min-h-10 rounded-md border border-line-strong bg-pad px-3.5 font-mono text-sm text-ink hover:border-copper"
+              >
+                ✕ Clear
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => setSelected(null)}
+              onClick={() => setOpenGroups(anyOpen ? new Set() : new Set(skillGroups.map((g) => g.id)))}
               className="min-h-10 rounded-md border border-line-strong bg-pad px-3.5 font-mono text-sm text-ink hover:border-copper"
             >
-              ✕ Clear
+              {anyOpen ? "▸ Close all" : "▾ Open all"}
             </button>
-          )}
+          </span>
         </div>
 
-        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {skillGroups.map((group) => {
             const groupOn = selected?.kind === "group" && selected.id === group.id;
+            const open = openGroups.has(group.id);
+            const lit = group.skills.filter((s) => litPads?.includes(s.id));
+            const panelId = `skills-${group.id}`;
             return (
               <div
                 key={group.id}
-                className={`flex flex-col gap-3 rounded-[10px] border bg-pad px-3.5 pb-4 pt-3 transition-all duration-200 ${
+                className={`flex flex-col rounded-[10px] border bg-pad px-3.5 transition-[border-color,box-shadow] duration-200 ${
                   "wide" in group && group.wide ? "col-span-full" : ""
-                } ${groupOn ? "border-copper shadow-[0_0_18px_-6px_var(--color-copper)]" : "border-line"}`}
+                } ${groupOn ? "border-copper shadow-[0_0_18px_-6px_var(--color-copper)]" : open ? "border-line-strong" : "border-line"} ${
+                  open ? "pb-4" : "pb-2.5"
+                }`}
               >
-                <button
-                  type="button"
-                  aria-pressed={groupOn}
-                  title={`Light up everything in ${group.label}`}
-                  onClick={() => toggle({ kind: "group", id: group.id })}
-                  className={`flex min-h-8 cursor-pointer items-center justify-between gap-2 border-0 bg-transparent p-0 text-left font-mono text-xs uppercase tracking-[0.1em] hover:text-copper ${
-                    groupOn ? "text-copper" : "text-muted"
-                  }`}
-                >
-                  <span>{group.label}</span>
-                  <span className="text-dim">{group.skills.length}</span>
-                </button>
-                <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
+                <div className="flex items-center gap-2">
+                  {/* The group's name opens and closes it. */}
+                  <button
+                    type="button"
+                    aria-expanded={open}
+                    aria-controls={panelId}
+                    onClick={() => flipGroup(group.id)}
+                    className={`flex min-h-11 flex-1 cursor-pointer items-center gap-2.5 border-0 bg-transparent p-0 text-left font-mono text-xs uppercase tracking-[0.1em] hover:text-copper ${
+                      groupOn ? "text-copper" : "text-muted"
+                    }`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`size-0 flex-none border-x-[5px] border-t-[7px] border-x-transparent border-t-copper transition-transform duration-200 ${open ? "" : "-rotate-90"}`}
+                    />
+                    <span>{group.label}</span>
+                    {/* A lit LED when something in this group is lit, so you can tell even when it's closed. */}
+                    {lit.length > 0 && <span aria-hidden="true" className="size-2 flex-none rounded-full bg-led shadow-[0_0_8px_var(--color-led)]" />}
+                  </button>
+                  {/* The count lights up everything in the group. */}
+                  <button
+                    type="button"
+                    aria-pressed={groupOn}
+                    aria-label={`Light up everything in ${group.label} (${group.skills.length} skills)`}
+                    title={`Light up everything in ${group.label}`}
+                    onClick={() => toggle({ kind: "group", id: group.id })}
+                    className={`min-h-8 min-w-8 cursor-pointer rounded-full border px-2 font-mono text-xs transition-colors ${
+                      groupOn ? "border-copper bg-copper text-board" : "border-line-strong bg-transparent text-dim hover:border-copper hover:text-copper"
+                    }`}
+                  >
+                    {group.skills.length}
+                  </button>
+                </div>
+                {/* One line, always the same height (long text is cut off with "…"), so hovering a project never moves the page. */}
+                {!open && (
+                  <p className="m-0 -mt-1 truncate pl-[22px] text-[13px] leading-5 text-dim">
+                    {lit.length > 0 ? (
+                      <span className="text-copper">
+                        <span aria-hidden="true" className="mr-1.5 inline-block size-[7px] rounded-full bg-led align-middle shadow-[0_0_6px_var(--color-led)]" />
+                        {lit.map((s) => s.label).join(" · ")}
+                      </span>
+                    ) : (
+                      <>
+                        {group.skills[0].label} · +{group.skills.length - 1} more
+                      </>
+                    )}
+                  </p>
+                )}
+                <ul id={panelId} hidden={!open} className="m-0 mt-1.5 flex list-none flex-wrap gap-2 p-0">
                   {group.skills.map((s) => {
                     const on = litPads?.includes(s.id) ?? false;
                     const dim = litPads !== null && !on;
@@ -328,7 +395,7 @@ function SkillList({ ids, selected }: { ids: SkillId[]; selected: SkillId[] | nu
       {ids.map((id, i) => (
         <span key={id}>
           {i > 0 && " · "}
-          <span className={selected?.includes(id) ? "font-semibold text-copper" : undefined}>{skillLabel.get(id)}</span>
+          <span className={selected?.includes(id) ? "text-copper" : undefined}>{skillLabel.get(id)}</span>
         </span>
       ))}
     </p>

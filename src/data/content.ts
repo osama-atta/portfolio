@@ -9,8 +9,9 @@ export const profile = {
   coordinates: "41.2565°N 95.9345°W",
   availability: "Open to remote & relocation",
   headline: "I build the whole tech stack. AI included.",
+  // Wrap words in **double asterisks** to make them bold.
   intro:
-    "Five years building production systems with Java/Spring, TypeScript/Angular and AI, on a foundation in computer engineering and embedded firmware.",
+    "**Five years** building production systems with **Java/Spring**, **TypeScript/Angular** and **AI**, on a foundation in computer engineering and embedded firmware.",
   email: "osama.obeid@hotmail.com",
   github: "https://github.com/osama-atta",
   linkedin: "https://www.linkedin.com/in/osama-atta3",

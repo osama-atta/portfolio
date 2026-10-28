@@ -72,6 +72,10 @@ export function SpineProvider({ children }: { children: ReactNode }) {
       if (!wrap || !track || !fill) return;
 
       const wrapRect = wrap.getBoundingClientRect();
+      // Start the spine at the tip of the chip's bottom pin. The CSS top is a
+      // first guess; the chip's real position depends on the header layout.
+      const origin = wrap.querySelector("[data-spine-origin]");
+      if (origin) track.style.top = `${Math.round(origin.getBoundingClientRect().bottom - wrapRect.top) - 2}px`;
       const trackTop = track.offsetTop;
       // Each branch carries its section's index in data-branch.
       const branches = Array.from(wrap.querySelectorAll<HTMLElement>("[data-branch]")).map((el) => ({

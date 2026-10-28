@@ -32,7 +32,9 @@ Almost everything the site says lives in **`src/data/content.ts`**: your intro, 
 - **What I'm working on now:** `nowItems` holds the four channels. A `counter` with `kind: "since"` counts months from a date (time in role); `kind: "until"` counts down to one (the certificate). They're worked out in the visitor's browser, so they stay current without redeploying.
 - **Probe readouts:** each metric has a `probe` block (what was measured, role, dates, and the `projectId` its "Trace it to the project" link jumps to).
 - **Case studies:** add an `href` to a project and a "Read case study →" link appears on its card.
-- **Résumé:** drop your PDF at `public/resume.pdf`. The Résumé buttons already point there.
+- **Résumé:** the Résumé buttons open a preview window (`components/ResumeViewer.tsx`) with "Open in new tab" and "Download PDF". The site's copy has no phone number. When you update your résumé, replace two files in `public/`:
+  - `resume.pdf`: the PDF people download (downloads as `Osama-Atta-Resume.pdf`).
+  - `resume-preview.webp`: a picture of the page for the preview. Render it from the same PDF at about 200 dpi, e.g. `pdftoppm -r 200 -png public/resume.pdf page` and convert to WebP. If the size changes, update `resumePreviewSize` in `src/data/content.ts`, along with `resumeUpdated`.
 
 Colors and fonts are design tokens in **`src/app/globals.css`** (`--color-copper`, `--color-led`, …). Tailwind turns them into classes like `bg-panel` and `text-copper`.
 
@@ -69,6 +71,9 @@ src/
     SkillsAndWork.tsx  Grouped skill pads, featured cards and a "more builds" dropdown: click a skill or group to light its work, hover work to light its skills
     Experience.tsx     Roles whose LEDs light in sequence when powered
     StickyHeader.tsx   Slim see-through bar with name, role and city that slides in once the header scrolls away
+    HeaderMenu.tsx     The header's menu button below 1024px (MenuButton.tsx has the icon and close-on-Escape/outside-click logic)
+    ResumeViewer.tsx   Preview window for the résumé, with Open in new tab and Download PDF
+    nav.ts             The page's main links, shared by the header, its menu and the pinned bar
     Header, Hero, Contact, SectionHeading, PinIcon, LocalTime
   data/content.ts      All the words and numbers
   hooks/usePrefersReducedMotion.ts

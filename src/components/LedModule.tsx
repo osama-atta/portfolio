@@ -311,11 +311,11 @@ export function LedModule() {
       </div>
 
       {narrow ? (
-        // Phones: a one-line hint, then the controls (or the score) and the switch on a single row.
-        <div className="flex flex-col pt-1.5 font-mono text-xs text-[#8fa89b]">
+        // Phones: everything centered under the screen: a one-line hint, the message LEDs (or the score), then the switch.
+        <div className="flex flex-col items-center pt-1.5 font-mono text-xs text-[#8fa89b]">
           <p className={`m-0 text-center text-[10px] tracking-[0.14em] text-dim ${fade}`}>{msgUp ? "← SWIPE OR TAP →" : PHONE_HINTS[hud.status]}</p>
-          <div className="flex flex-wrap items-center justify-between gap-x-2 pl-0.5">
-            <div className={`grid items-center [&>*]:[grid-area:1/1] ${fade}`}>
+          <div className="flex flex-col items-center gap-0.5">
+            <div className={`grid place-items-center [&>*]:[grid-area:1/1] ${fade}`}>
               {controls}
               <span className={msgUp ? "invisible" : ""}>
                 <Scoreboard hud={hud} />

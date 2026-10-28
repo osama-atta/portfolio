@@ -8,7 +8,6 @@ export const profile = {
   location: "Omaha, NE",
   timeZone: "America/Chicago", // drives the live local time next to the location
   coordinates: "41.2565°N 95.9345°W",
-  availability: "Open to remote & relocation",
   headline: "I build the whole tech stack. AI included.",
   // Wrap words in **double asterisks** to make them bold.
   intro:
@@ -16,8 +15,13 @@ export const profile = {
   email: "osama.obeid@hotmail.com",
   github: "https://github.com/osama-atta",
   linkedin: "https://www.linkedin.com/in/osama-atta3",
-  // Put your résumé at public/resume.pdf and this link will work.
+  // The résumé: the PDF people download, and a picture of its page for the in-page preview.
+  // When you update the résumé, replace both files in /public (see the README).
   resumeFile: "/resume.pdf",
+  resumePreview: "/resume-preview.webp",
+  resumePreviewSize: { width: 1700, height: 2200 },
+  resumeDownloadName: "Osama-Atta-Resume.pdf",
+  resumeUpdated: "Oct 2026",
 };
 
 // Messages for the LED display. Each entry is one "frame" of up to two lines.

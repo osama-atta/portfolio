@@ -187,6 +187,57 @@ html:not(.booted) .via-pop {
   }
 }
 
+/* Résumé viewer (components/ResumeViewer.tsx): a native <dialog>. On phones it
+   fills the screen; from 640px up it's a window over the dimmed board. */
+html.resume-open {
+  overflow: hidden;
+  padding-right: var(--scrollbar-width, 0px);
+}
+.resume-dialog {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+.resume-dialog[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.resume-dialog::backdrop {
+  background-color: rgb(7 18 13 / 0.84);
+  background-image: radial-gradient(rgb(217 164 65 / 0.12) 1px, transparent 1px);
+  background-size: 18px 18px;
+  backdrop-filter: blur(3px);
+}
+.resume-scroll {
+  background-color: var(--color-board);
+  background-image: radial-gradient(var(--color-line) 1px, transparent 1px);
+  background-size: 16px 16px;
+  overscroll-behavior: contain;
+}
+.resume-dialog[open] .resume-panel {
+  animation: resume-in 180ms ease-out;
+}
+@keyframes resume-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}
+@media (min-width: 640px) {
+  .resume-dialog {
+    padding: 32px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -205,5 +256,8 @@ html:not(.booted) .via-pop {
     animation: none;
     stroke-dashoffset: 0;
     opacity: 1;
+  }
+  .resume-dialog[open] .resume-panel {
+    animation: none;
   }
 }

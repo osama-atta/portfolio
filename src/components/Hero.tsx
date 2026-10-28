@@ -1,8 +1,6 @@
-import { profile } from "@/data/content";
+import { experience, profile } from "@/data/content";
 import { withBasePath } from "@/lib/basePath";
 import { PoweredSection } from "./circuit/PoweredSection";
-import { LocalTime } from "./LocalTime";
-import { PinIcon } from "./PinIcon";
 
 /** Turns **bold** markers in a sentence into <strong> text. */
 function withBold(text: string) {
@@ -17,32 +15,26 @@ function withBold(text: string) {
   );
 }
 
+// The job I have now (the one marked current in the experience list), shown at the top of the hero.
+const currentRole = experience.find((e) => e.current) ?? experience[0];
+
 export function Hero() {
   return (
     <PoweredSection index={1} branchTop={12} className="-mt-10 flex max-w-[900px] flex-col gap-[22px]">
-      <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2">
-        <p className="m-0 font-mono text-[15px] text-copper">{profile.eyebrow}</p>
-        {/* Where I am and what time it is there, so remote teams can place me. */}
-        <p className="m-0 inline-flex flex-wrap items-center gap-x-2 rounded-2xl border border-line-strong bg-panel px-3 py-1 font-mono text-[13px] text-soft">
-          <PinIcon />
-          <span>{profile.location}</span>
-          <span aria-hidden="true" className="text-dim">·</span>
-          <LocalTime timeZone={profile.timeZone} fallback="Central Time" />
-          <span aria-hidden="true" className="text-dim">·</span>
-          <span className="text-copper">{profile.availability}</span>
-        </p>
-      </div>
+      {/* Reference designator (A1, like the sections below) and my current role.
+          The top padding centers the first line on the branch, which sits 13.5px down (branchTop + half its 3px height). */}
+      <p className="m-0 pt-[5.5px] font-mono text-xs text-copper sm:pt-[3.5px] sm:text-[15px]">
+        A1 · {currentRole.title} <span className="whitespace-nowrap text-soft">@ {currentRole.org}</span>
+      </p>
       <h1 className="m-0 font-display text-[clamp(40px,5.6vw,66px)] font-bold leading-[1.05] tracking-[-0.02em]">{profile.headline}</h1>
       <p className="m-0 max-w-[640px] text-[19px] leading-relaxed text-muted">{withBold(profile.intro)}</p>
-      <div className="flex flex-wrap gap-3 pt-1">
-        <a href="#work" className="rounded-md bg-copper px-[22px] py-3.5 text-base font-semibold text-board no-underline hover:brightness-110">
-          See selected work
-        </a>
+      <div className="pt-1">
         <a
           href={withBasePath(profile.resumeFile)}
-          className="rounded-md border border-line-strong px-[22px] py-[13px] text-base font-semibold text-ink no-underline hover:border-copper"
+          data-resume
+          className="inline-block rounded-md bg-copper px-[22px] py-3.5 text-base font-semibold text-board no-underline hover:brightness-110"
         >
-          Download résumé
+          View résumé
         </a>
       </div>
     </PoweredSection>

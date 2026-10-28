@@ -77,7 +77,7 @@ export function NowSection() {
 
   return (
     <PoweredSection index={POWER_INDEX} id="now" className="flex flex-col gap-[22px]">
-      <SectionHeading eyebrow="A1 · Status monitor" title="What I'm working on now" badgeFor={POWER_INDEX} />
+      <SectionHeading eyebrow="A2 · Status monitor" title="What I'm working on now" badgeFor={POWER_INDEX} />
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(250px,100%),1fr))] gap-4">
         {nowItems.map((item, i) => {

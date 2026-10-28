@@ -140,7 +140,7 @@ export function SkillsAndWork() {
 
   return (
     <PoweredSection index={3} id="work" className="flex flex-col gap-6">
-      <SectionHeading eyebrow="A2 · Skill matrix" title="Skills & Projects" badgeFor={3} />
+      <SectionHeading eyebrow="A3 · Skill matrix" title="Skills & Projects" badgeFor={3} />
 
       <div ref={boardRef} className="flex scroll-mt-20 flex-col gap-4 rounded-[14px] border border-line bg-panel p-4 sm:p-6">
         <div className="flex min-h-11 flex-wrap items-center justify-between gap-3">

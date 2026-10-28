@@ -32,7 +32,7 @@ export function Experience() {
   return (
     <>
       <PoweredSection index={POWER_INDEX} id="experience" className="flex flex-col gap-5">
-        <SectionHeading eyebrow="A3 · Event log" title="Experience" badgeFor={POWER_INDEX} />
+        <SectionHeading eyebrow="A4 · Event log" title="Experience" badgeFor={POWER_INDEX} />
         <ol className="m-0 list-none rounded-[14px] border border-line bg-panel p-0">
           {experience.map((job, i) => {
             const lit = i < shown;
@@ -54,7 +54,7 @@ export function Experience() {
         </ol>
       </PoweredSection>
       <PoweredSection index={EDUCATION_INDEX} id="education" className="flex flex-col gap-5">
-        <SectionHeading eyebrow="A4 · Boot ROM" title="Education" badgeFor={EDUCATION_INDEX} />
+        <SectionHeading eyebrow="A5 · Boot ROM" title="Education" badgeFor={EDUCATION_INDEX} />
         {/* Side by side on wider screens, stacked on phones. */}
         <div className="grid rounded-[14px] border border-line bg-panel px-[22px] md:grid-cols-2 md:gap-x-10">
           {education.map((item) => (

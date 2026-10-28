@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { profile } from "@/data/content";
 import { withBasePath } from "@/lib/basePath";
-import { NAV } from "./Header";
+import { MenuIcon, useMenuDismiss } from "./MenuButton";
+import { NAV } from "./nav";
 import { PinIcon } from "./PinIcon";
 
 /**
@@ -34,19 +35,8 @@ export function StickyHeader() {
   }, []);
 
   // Close the menu with Escape or a click anywhere outside the bar.
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
-    const onClick = (e: MouseEvent) => {
-      if (!barRef.current?.contains(e.target as Node)) setMenuOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("click", onClick);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("click", onClick);
-    };
-  }, [menuOpen]);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+  useMenuDismiss(menuOpen, closeMenu, barRef);
 
   return (
     <div
@@ -86,6 +76,7 @@ export function StickyHeader() {
           ))}
           <a
             href={withBasePath(profile.resumeFile)}
+            data-resume
             className="ml-1.5 rounded-md bg-copper px-3.5 py-2 font-semibold text-board no-underline hover:brightness-110"
           >
             Résumé
@@ -101,11 +92,7 @@ export function StickyHeader() {
           onClick={() => setMenuOpen((o) => !o)}
           className="grid size-11 flex-none cursor-pointer place-items-center rounded-md border-0 bg-transparent text-ink lg:hidden"
         >
-          <span aria-hidden="true" className="relative block h-3.5 w-[18px]">
-            <span className={`absolute left-0 h-0.5 w-full bg-current transition-all ${menuOpen ? "top-1.5 rotate-45" : "top-0"}`} />
-            <span className={`absolute left-0 top-1.5 h-0.5 w-full bg-current transition-opacity ${menuOpen ? "opacity-0" : ""}`} />
-            <span className={`absolute left-0 h-0.5 w-full bg-current transition-all ${menuOpen ? "top-1.5 -rotate-45" : "top-3"}`} />
-          </span>
+          <MenuIcon open={menuOpen} />
         </button>
       </div>
 
@@ -119,6 +106,7 @@ export function StickyHeader() {
             ))}
             <a
               href={withBasePath(profile.resumeFile)}
+              data-resume
               onClick={() => setMenuOpen(false)}
               className="mt-1 self-start rounded-md bg-copper px-[18px] py-2.5 font-semibold text-board no-underline hover:brightness-110"
             >

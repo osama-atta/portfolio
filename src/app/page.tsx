@@ -8,6 +8,7 @@ import { NowSection } from "@/components/NowSection";
 import { SkillsAndWork } from "@/components/SkillsAndWork";
 import { Experience } from "@/components/Experience";
 import { Contact } from "@/components/Contact";
+import { ResumeViewer } from "@/components/ResumeViewer";
 
 /*
   Each section has a power index (0–6): display, hero, now, skills,
@@ -16,7 +17,7 @@ import { Contact } from "@/components/Contact";
 
   Section 2 is "What I'm working on now". The impact-numbers section is still
   in components/Metrics.tsx; to switch back, swap <NowSection /> for <Metrics />
-  (and the "Now" nav link in Header.tsx back to "#impact").
+  (and the "Now" link in components/nav.ts back to "#impact").
 */
 export default function Home() {
   return (
@@ -36,6 +37,7 @@ export default function Home() {
           <Contact />
         </div>
       </SpineProvider>
+      <ResumeViewer />
     </div>
   );
 }

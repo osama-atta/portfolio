@@ -1,4 +1,4 @@
-// The OA-2026 chip used as the logo. Its bottom-center pin (x = 32 of 64)
+// The OA chip (U1) used as the logo. Its bottom-center pin (x = 32 of 64)
 // sits exactly on the spine, which starts right below it.
 // Traces leave the three top pins and fan out above the chip to vias; they
 // draw themselves once the boot screen finishes (see .trace-draw in globals.css).
@@ -12,10 +12,15 @@ const TOP_TRACES: { d: string; via: [number, number] }[] = [
   { d: "M42 2 V-5 L51 -14 H72", via: [72, -14] },
 ];
 
-export function ChipLogo() {
-  return (
+/**
+ * `spineOrigin` marks this chip as where the spine starts: the spine is lined up with its bottom pin.
+ * `designator` prints a silkscreen label (like "U1") beside the chip's bottom-left corner, as on a real board.
+ */
+export function ChipLogo({ spineOrigin = false, designator }: { spineOrigin?: boolean; designator?: string }) {
+  const chip = (
     <svg
       aria-hidden="true"
+      data-spine-origin={spineOrigin || undefined}
       viewBox="0 0 64 64"
       overflow="visible"
       className="block flex-none overflow-visible"
@@ -52,5 +57,14 @@ export function ChipLogo() {
         OA
       </text>
     </svg>
+  );
+  if (!designator) return chip;
+  return (
+    <span className="relative block flex-none">
+      {chip}
+      <span aria-hidden="true" className="absolute bottom-0 right-full mr-1 font-mono text-[10px] font-medium leading-none tracking-wide text-dim">
+        {designator}
+      </span>
+    </span>
   );
 }

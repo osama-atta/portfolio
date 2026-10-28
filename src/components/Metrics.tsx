@@ -64,7 +64,7 @@ export function Metrics() {
   return (
     <PoweredSection index={POWER_INDEX} id="impact" className="flex flex-col gap-[22px]">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <SectionHeading eyebrow="A1 · Test points" title="Impact so far" badgeFor={POWER_INDEX} />
+        <SectionHeading eyebrow="A2 · Test points" title="Impact so far" badgeFor={POWER_INDEX} />
         {!reduced && (
           <button
             type="button"

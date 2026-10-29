@@ -23,9 +23,9 @@ export function Header() {
           <span>{profile.name}</span>
           {/* Role, city and the local time: one line on wider screens; on phones, two lines. */}
           <span className="flex flex-col gap-0.5 font-mono text-xs font-normal text-muted sm:flex-row sm:items-center sm:gap-2">
-            {/* On the narrowest phones the shorter role leaves room for the menu button. */}
-            <span className="max-[379px]:hidden">{profile.eyebrow}</span>
-            <span className="hidden max-[379px]:inline">{profile.roleShort}</span>
+            {/* On the narrowest phones (under 380px) the shorter role leaves room for the menu button. */}
+            <span className="max-[380px]:hidden">{profile.eyebrow}</span>
+            <span className="hidden max-[380px]:inline">{profile.roleShort}</span>
             <span aria-hidden="true" className="hidden text-line-strong sm:inline">
               ·
             </span>

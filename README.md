@@ -2,7 +2,7 @@
 
 A circuit board you can scroll. The OA-2026 chip in the logo feeds one copper "spine" that runs down the page. As you scroll, current flows along it and each section powers on when the current reaches its branch: the LED display starts flashing messages, the test points measure your impact numbers one by one on seven-segment displays, and the experience LEDs light in sequence. Clicking a skill lights up the work that used it, and clicking a project lights up its skills.
 
-Built with **Next.js 16 (App Router)**, **React 19**, **TypeScript** and **Tailwind CSS v4**, exported as a static site and deployed to **GitHub Pages**.
+Built with **Next.js 16 (App Router)**, **React 19**, **TypeScript** and **Tailwind CSS v4**, exported as a static site and hosted on **AWS Amplify**.
 
 ## Run it locally
 
@@ -40,11 +40,9 @@ Colors and fonts are design tokens in **`src/app/globals.css`** (`--color-copper
 
 ## Deploy
 
-Every push to `main` runs `.github/workflows/deploy.yml`, which lints, builds and publishes to GitHub Pages.
+The live site is on **AWS Amplify Hosting**, connected to this GitHub repo: every push to `main` builds the site (`npm run build`) and publishes the static export in `out/`.
 
-One-time setup: in the repo, go to **Settings → Pages → Build and deployment** and set **Source** to **GitHub Actions**.
-
-The site will be at `https://osama-atta.github.io/portfolio/`. If you later rename the repo to `osama-atta.github.io`, or add a custom domain, the workflow serves it from the root automatically.
+**Alternative: GitHub Pages.** `.github/workflows/deploy.yml` lints, builds and publishes to GitHub Pages on every push to `main`. To use it, go to **Settings → Pages → Build and deployment** and set **Source** to **GitHub Actions**. The site would be at `https://osama-atta.github.io/portfolio/` (or at the root, if the repo is renamed to `osama-atta.github.io` or given a custom domain).
 
 ## How it's put together
 

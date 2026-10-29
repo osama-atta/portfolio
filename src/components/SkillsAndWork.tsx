@@ -227,7 +227,12 @@ export function SkillsAndWork() {
     : selected.kind === "project"
       ? `Uses ${chips.length} ${chips.length === 1 ? "skill" : "skills"}, lit on the board`
       : matching
-        ? `Used in ${featuredMatches} featured ${featuredMatches === 1 ? "project" : "projects"} and ${matchingBuilds} more ${matchingBuilds === 1 ? "build" : "builds"}`
+        ? `Used in ${[
+            featuredMatches && `${featuredMatches} featured ${featuredMatches === 1 ? "project" : "projects"}`,
+            matchingBuilds && `${featuredMatches ? `${matchingBuilds} more` : matchingBuilds} ${matchingBuilds === 1 ? "build" : "builds"}`,
+          ]
+            .filter(Boolean)
+            .join(" and ")}`
         : "Not in a project on this page yet";
 
   const probe = (variant: "inline" | "dock") => {

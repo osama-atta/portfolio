@@ -4,7 +4,7 @@
 export const profile = {
   name: "Osama Atta",
   eyebrow: "Full-stack software engineer",
-  roleShort: "Full-stack engineer", // where space is tight (the pinned header on phones)
+  roleShort: "Full-stack engineer", // where space is tight (the narrowest phones, and the pinned header below 1024px)
   location: "Omaha, NE, USA",
   timeZone: "America/Chicago", // drives the live local time next to the location
   coordinates: "41.2565°N 95.9345°W",
@@ -136,7 +136,7 @@ export const nowItems: NowItem[] = [
     status: "ACTIVE",
     title: "FinTech at Union Pacific",
     detail:
-      "Modernizing the financial systems behind America's largest railroad. As a Senior Project Engineer in FinTech, I build and maintain full-stack applications across finance, payroll and marketing, from AI-powered OCR tools that turn documents into data to a new platform for managing market dimensions.",
+      "Modernizing the financial systems behind America's largest railroad. As a Senior Project Engineer in FinTech, I build and maintain full-stack applications across finance, payroll and marketing, from an AI-powered app that reads payment details out of customer emails to a new platform for managing market dimensions.",
     counter: { kind: "since", year: 2025, month: 12, label: "MONTHS IN ROLE" },
   },
   {
@@ -171,11 +171,12 @@ export const skillGroups = [
     label: "Front end & mobile",
     skills: [
       { id: "ts", label: "TypeScript" },
+      { id: "js", label: "JavaScript" },
       { id: "angular", label: "Angular" },
-      { id: "rxjs", label: "RxJS" },
       { id: "html", label: "HTML/CSS" },
       { id: "android", label: "Android" },
       { id: "react", label: "React / Next.js" },
+      { id: "tailwind", label: "Tailwind CSS" },
     ],
   },
   {
@@ -183,6 +184,7 @@ export const skillGroups = [
     label: "Data",
     skills: [
       { id: "oracle", label: "Oracle / SQL" },
+      { id: "jdbc", label: "JDBC" },
       { id: "liquibase", label: "Liquibase" },
       { id: "mysql", label: "MySQL" },
     ],
@@ -192,12 +194,15 @@ export const skillGroups = [
     label: "Testing & DevOps",
     skills: [
       { id: "junit", label: "JUnit / Mockito" },
+      { id: "testng", label: "TestNG" },
       { id: "jasmine", label: "Jasmine" },
       { id: "git", label: "Git" },
       { id: "gha", label: "GitHub Actions" },
       { id: "jenkins", label: "Jenkins" },
+      { id: "cicd", label: "CI/CD" },
       { id: "k8s", label: "Kubernetes" },
       { id: "linux", label: "Linux/Unix" },
+      { id: "amplify", label: "AWS Amplify" },
     ],
   },
   {
@@ -208,7 +213,6 @@ export const skillGroups = [
       { id: "openspec", label: "Spec-driven dev (OpenSpec)" },
       { id: "aidev", label: "AI-assisted dev" },
       { id: "pytorch", label: "Python / PyTorch" },
-      { id: "langgraph", label: "LangGraph" },
     ],
   },
   {
@@ -233,6 +237,7 @@ export const skillGroups = [
       { id: "adopt", label: "Driving adoption" },
       { id: "xteam", label: "Cross-team coordination" },
       { id: "own", label: "Ownership & on-call" },
+      { id: "agile", label: "Agile / Scrum" },
     ],
   },
 ] as const;
@@ -268,7 +273,7 @@ export const projects: Project[] = [
     description:
       "A Java/Spring app that reads check payment details from customer emails, applies them to accounts receivable and flags exceptions for review. Built spec-first with OpenSpec and AI coding agents.",
     result: "5% more accurate than the legacy system",
-    skills: ["java", "spring", "rest", "aiapps", "openspec", "aidev"],
+    skills: ["java", "spring", "rest", "aiapps", "openspec", "aidev", "jdbc", "liquibase"],
   },
   {
     id: "utilization",
@@ -277,7 +282,7 @@ export const projects: Project[] = [
     description:
       "Two web apps on Oracle, Java/Spring and Angular that track crew productivity so expensive equipment is put to the best use.",
     result: "$4.6M in savings",
-    skills: ["java", "spring", "ts", "angular", "oracle", "rest"],
+    skills: ["java", "spring", "ts", "angular", "oracle", "rest", "agile", "jdbc", "liquibase"],
   },
   {
     id: "marketing",
@@ -286,7 +291,7 @@ export const projects: Project[] = [
     description:
       "A full-stack app that lets the marketing team maintain its own validated data instead of filing manual requests. Built spec-first with OpenSpec and AI coding agents, an approach I'm now recommending to other teams.",
     result: "Manual requests replaced by self-service",
-    skills: ["java", "spring", "ts", "angular", "oracle", "rest", "openspec", "aidev", "stake", "adopt"],
+    skills: ["java", "spring", "ts", "angular", "oracle", "rest", "openspec", "aidev", "stake", "adopt", "jdbc", "liquibase"],
   },
   {
     id: "finance-modernization",
@@ -295,7 +300,7 @@ export const projects: Project[] = [
     description:
       "Upgraded receivables and payables apps from Java 8 to 17 and Spring Boot, moved javax to Jakarta EE, replaced JMS with HTTP calls and cleaned up Maven parent POMs.",
     result: "Known security vulnerabilities patched",
-    skills: ["java", "spring", "jakarta", "maven", "jms"],
+    skills: ["java", "spring", "jakarta", "maven", "jms", "jdbc", "liquibase"],
   },
   {
     id: "modernization",
@@ -303,7 +308,7 @@ export const projects: Project[] = [
     title: "Legacy apps rebuilt for today",
     description: "Led four interns rewriting two high-usage Apache Wicket apps as responsive Angular apps that work on phones.",
     result: "Two high-usage apps, mobile-ready",
-    skills: ["ts", "angular", "html", "java", "lead", "mentor"],
+    skills: ["ts", "angular", "html", "java", "lead", "mentor", "jdbc", "liquibase"],
   },
   {
     id: "customer",
@@ -311,30 +316,30 @@ export const projects: Project[] = [
     title: "Customer-driven app improvements",
     description: "Shipped customer-requested features and critical fixes across Android and web apps.",
     result: "63% fewer support tickets year over year",
-    skills: ["android", "angular", "ts", "java", "stake"],
+    skills: ["android", "angular", "ts", "java", "stake", "agile", "jdbc", "liquibase"],
   },
 ];
 
 export const builds: Build[] = [
-  { id: "telemetry", title: "Telemetry microservices", note: "Java services collecting data from 10,000+ Android devices", years: "2023–24", skills: ["java", "micro", "android"] },
+  { id: "telemetry", title: "Telemetry microservices", note: "Java services collecting data from 10,000+ Android devices", years: "2023–24", skills: ["java", "micro", "android", "jdbc", "liquibase"] },
   { id: "on-call", title: "On-call reliability", note: "99.94% uptime across multiple products", years: "2023–24", skills: ["k8s", "linux", "own"] },
-  { id: "github", title: "GitHub and GitHub Actions migration", note: "Led the move off GitLab and Jenkins without breaking releases", years: "2024–25", skills: ["git", "gha", "jenkins", "lead"] },
+  { id: "github", title: "GitHub and GitHub Actions migration", note: "Led the move off GitLab and Jenkins without breaking releases", years: "2024–25", skills: ["git", "gha", "jenkins", "cicd", "lead"] },
   { id: "boards", title: "Microcontroller boards", note: "Designed AT89LP51 and STM32 boards, from PCB layout to embedded C", years: "2022", skills: ["c", "mcu", "pcb"] },
   { id: "ux", title: "UX improvement initiative", note: "15% more usage; mentored a UX intern", years: "2023–24", skills: ["angular", "html", "mentor"] },
   { id: "ai-tools", title: "AI developer tools rollout", note: "Later adopted company-wide", years: "2024–25", skills: ["aidev", "adopt"] },
-  { id: "payroll", title: "Off-cycle payroll workflow", note: "Submit, review and approve payouts outside normal pay cycles", years: "2025–now", skills: ["java", "spring", "angular", "stake"] },
+  { id: "payroll", title: "Off-cycle payroll workflow", note: "Submit, review and approve payouts outside normal pay cycles", years: "2025–now", skills: ["java", "spring", "angular", "stake", "jdbc", "liquibase"] },
   { id: "netcontrol", title: "Mainframe-to-API cutover", note: "Represented my team in an enterprise-wide modernization", years: "2023–24", skills: ["rest", "xteam"] },
-  { id: "angular-migration", title: "AngularJS to Angular migration", note: "Moved a legacy AngularJS app to Angular 11 and TypeScript for easier upkeep and better performance", years: "2021–23", skills: ["angular", "ts"] },
-  { id: "work-orders", title: "Mobile work-order app", note: "Java/Spring and Angular with 80% test coverage", years: "2021–23", skills: ["java", "spring", "angular", "junit", "jasmine"] },
+  { id: "angular-migration", title: "AngularJS to Angular migration", note: "Moved a legacy AngularJS app to Angular 11 and TypeScript for easier upkeep and better performance", years: "2021–23", skills: ["angular", "ts", "js"] },
+  { id: "work-orders", title: "Mobile work-order app", note: "Java/Spring and Angular with 80% test coverage", years: "2021–23", skills: ["java", "spring", "angular", "junit", "testng", "jasmine", "agile", "jdbc", "liquibase"] },
   { id: "thermal", title: "Thermal water storage system", note: "IoT firmware, MQTT messaging and live analytics", years: "2022–23", skills: ["c", "mcu", "mqtt", "nodered", "mysql"] },
-  { id: "portfolio", title: "This portfolio", note: "Next.js, React and Tailwind, built to learn a new stack", years: "2026", skills: ["react", "ts"] },
+  { id: "portfolio", title: "This portfolio", note: "Next.js, React and Tailwind, deployed on AWS Amplify with automatic builds from GitHub", years: "2026", skills: ["react", "ts", "tailwind", "amplify", "cicd"] },
 ];
 
 export const experience = [
   { title: "Senior Project Engineer, FinTech", org: "Union Pacific", dates: "Dec 2025 – now", current: true },
   { title: "Project Engineer, Operations", org: "Union Pacific", dates: "Oct 2024 – Dec 2025" },
   { title: "Associate Senior Application Developer, Operations", org: "Union Pacific", dates: "May 2023 – Oct 2024" },
-  { title: "Technology Intern, Operations", org: "Union Pacific", dates: "Oct 2021 – May 2023" },
+  { title: "Technology Year-Round Intern, Operations", org: "Union Pacific", dates: "Oct 2021 – May 2023" },
 ];
 
 export const education = [

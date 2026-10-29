@@ -17,7 +17,7 @@ export function Contact() {
           <span aria-hidden="true" className="size-2.5 rounded-full bg-led shadow-[0_0_10px_var(--led-glow)]" />
           J1 · I/O header
         </span>
-        <h2 className="m-0 max-w-[760px] font-display text-[27px] leading-tight max-[379px]:text-[24px] font-bold sm:text-[clamp(32px,4.5vw,48px)] sm:leading-normal">Let’s build something together.</h2>
+        <h2 className="m-0 max-w-[760px] font-display text-[27px] leading-tight max-[380px]:text-[24px] font-bold sm:text-[clamp(32px,4.5vw,48px)] sm:leading-normal">Let’s build something together.</h2>
         <p className="m-0 max-w-[560px] text-[15px] leading-relaxed text-muted sm:text-[17px]">
           Always happy to talk anything tech.
         </p>

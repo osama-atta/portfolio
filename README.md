@@ -67,7 +67,7 @@ src/
     Metrics.tsx        Impact test points (not on the page right now; swap it back in page.tsx)
     ProbeReadout.tsx   The multimeter readout that explains a probed number
     SevenSegment.tsx   A single seven-segment digit
-    SkillsAndWork.tsx  Grouped skill pads, featured cards and a "more builds" dropdown. Picking a skill doesn't scroll: the probe under the board lists the work that uses it, and its project links scroll to the card (stopping before Experience powers on). Picking a project card scrolls back up to the top of the section, with its skills lit
+    SkillsAndWork.tsx  Grouped skill pads, featured cards and a "more builds" dropdown. Picking a skill doesn't scroll: the probe under the board lists the work that uses it, and its project links scroll to the card (stopping before Experience powers on). Picking a project card lights its skills without moving the page. While something is picked, a chip shows it (in the corner on desktop, along the bottom on phones): for a skill, ◀ ▶ (or ← →) step through every match and clicking its name lists them all; for a project, it jumps between the card and its lit skills. Escape clears it from anywhere
     Experience.tsx     Roles whose LEDs light in sequence when powered
     StickyHeader.tsx   Slim see-through bar with name, role and city that slides in once the header scrolls away
     HeaderMenu.tsx     The header's menu button below 1024px (MenuButton.tsx has the icon and close-on-Escape/outside-click logic)

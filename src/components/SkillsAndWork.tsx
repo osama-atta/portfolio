@@ -13,28 +13,28 @@ const allWork: (Project | Build)[] = [...projects, ...builds];
 
 const POWER_INDEX = 3;
 const HEADER_SPACE = 80; // room for the pinned header, plus a little air
-const DOCK_SPACE = 150; // roughly how much of a phone screen the docked probe covers
+const PILL_SPACE = 80; // how much of the bottom of a phone screen the pick pill covers, plus a little air
 const PULSE_MS = 1600;
+// The round buttons on the pick chip and its list.
+const PILL_BTN =
+  "inline-flex h-[34px] min-w-[34px] flex-none cursor-pointer items-center justify-center rounded-full border border-line-strong bg-pad px-2.5 font-mono text-xs text-ink hover:border-copper sm:h-8 sm:min-w-8";
 
 /**
  * Scroll to a project card or build when the visitor asks for it (by clicking
  * its name in the probe). It lands just below the pinned header, unless that
  * would scroll far enough to power on the next section (Experience); then it
- * stops just short of that. Does nothing if the card is already on screen.
+ * stops just short of that (see workScrollTop). Does nothing if the card is already on screen, unless
+ * `always` is set (the chip's "↓ Project", which should always bring the card up to the top).
  * Runs after React has painted, so a just-opened dropdown can be measured.
  */
-function scrollToWork(id: string, coveredBelow: number) {
+function scrollToWork(id: string, coveredBelow: number, always = false) {
   requestAnimationFrame(() =>
     requestAnimationFrame(() => {
       const el = document.getElementById(`project-${id}`);
       if (!el) return;
       const r = el.getBoundingClientRect();
-      const vh = window.innerHeight;
-      if (r.top >= HEADER_SPACE && r.bottom <= vh - coveredBelow) return;
-      let top = window.scrollY + r.top - HEADER_SPACE;
-      // The next section powers on when its branch reaches POWER_LINE down the screen; stay 24px above that.
-      const next = document.querySelector<HTMLElement>(`[data-branch="${POWER_INDEX + 1}"]`);
-      if (next) top = Math.min(top, window.scrollY + next.getBoundingClientRect().top - vh * POWER_LINE - 24);
+      if (!always && r.top >= HEADER_SPACE && r.bottom <= window.innerHeight - coveredBelow) return;
+      const top = workScrollTop(el);
       if (Math.abs(top - window.scrollY) < 4) return;
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       window.scrollTo({ top, behavior: reduced ? "auto" : "smooth" });
@@ -43,7 +43,24 @@ function scrollToWork(id: string, coveredBelow: number) {
 }
 
 /**
- * After a project card is picked: scroll up to the top of this section, so its heading sits just
+ * Where the page scrolls to for a card: just below the pinned header, but never far enough to power on
+ * the next section (its branch would reach POWER_LINE down the screen; stay 24px above that), and never
+ * past the end of the page.
+ */
+function workScrollTop(el: HTMLElement) {
+  let top = window.scrollY + el.getBoundingClientRect().top - HEADER_SPACE;
+  const next = document.querySelector<HTMLElement>(`[data-branch="${POWER_INDEX + 1}"]`);
+  if (next) top = Math.min(top, window.scrollY + next.getBoundingClientRect().top - window.innerHeight * POWER_LINE - 24);
+  return Math.max(0, Math.min(top, document.documentElement.scrollHeight - window.innerHeight));
+}
+
+/** Where the page scrolls to for "↑ Skills": this section's heading just below the pinned header. */
+function sectionScrollTop(section: HTMLElement) {
+  return Math.max(0, window.scrollY + section.getBoundingClientRect().top - HEADER_SPACE);
+}
+
+/**
+ * The chip's "↑ Skills": scroll up to the top of this section, so its heading sits just
  * below the pinned header with the skill board under it. Scrolling up never reaches the next
  * section, so there's no power-on limit to mind. Runs after React has painted, so groups that were
  * just opened are already in place.
@@ -53,12 +70,26 @@ function scrollToSectionTop() {
     requestAnimationFrame(() => {
       const section = document.getElementById("work");
       if (!section) return;
-      const top = window.scrollY + section.getBoundingClientRect().top - HEADER_SPACE;
+      const top = sectionScrollTop(section);
       if (Math.abs(top - window.scrollY) < 4) return;
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       window.scrollTo({ top, behavior: reduced ? "auto" : "smooth" });
     }),
   );
+}
+
+/**
+ * Make a change that resizes things above the visitor's view (opening or closing skill groups, the
+ * probe's list) without the page appearing to move: `anchor` stays where it was on screen.
+ */
+function holdStill(anchor: Element | null, change: () => void) {
+  const before = anchor?.getBoundingClientRect().top;
+  change();
+  if (!anchor || before === undefined) return;
+  requestAnimationFrame(() => {
+    const shift = anchor.getBoundingClientRect().top - before;
+    if (Math.abs(shift) > 1) window.scrollBy({ top: shift, behavior: "instant" });
+  });
 }
 
 /** What the visitor clicked: one skill, a whole group of them, or a project. */
@@ -77,8 +108,14 @@ type Selection =
  * Picking a skill never moves the page. Instead, the "probe" strip under the
  * board shows what it connects to: the projects and builds that use it. Clicking
  * a project's name there scrolls to its card. Picking a project card opens the
- * groups it uses and scrolls back up to the top of this section. On phones the probe docks to the bottom of
- * the screen while something is picked and this section is on screen.
+ * groups it uses without moving the page. While something is picked, a chip shows it (along the
+ * bottom on phones, in the corner on desktop):
+ * - for a skill or group, ◀ ▶ (or ← → while it has focus) step through every match, featured cards
+ *   first and then builds, and clicking its name lists them all (a sheet on phones, a small panel
+ *   above the chip on desktop, where the probe under the board shows them too);
+ * - for a project, its skill count and "↑ Skills" or "↓ Project", whichever is further from where you are;
+ * - "✕" to clear.
+ * Escape clears the pick from anywhere.
  * Featured projects get full cards; the rest sit in a "more builds" dropdown.
  */
 export function SkillsAndWork() {
@@ -87,8 +124,10 @@ export function SkillsAndWork() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<ReadonlySet<SkillGroupId>>(() => new Set());
   const [pulse, setPulse] = useState<string | null>(null); // the card just scrolled to, briefly outlined
-  const [inView, setInView] = useState(false); // is this section on screen? (for the phone dock)
+  const [jumpDown, setJumpDown] = useState(false); // should the chip offer "↓ Project" (rather than "↑ Skills") for a picked project?
+  const [step, setStep] = useState<{ key: string; idx: number } | null>(null); // where the phone pill's ◀ ▶ is, per pick
   const pulseTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const sheetRef = useRef<HTMLDialogElement>(null);
 
   const openGroup = (ids: SkillGroupId[]) => setOpenGroups((cur) => new Set([...cur, ...ids]));
   const flipGroup = (id: SkillGroupId) =>
@@ -100,17 +139,52 @@ export function SkillsAndWork() {
     });
   const anyOpen = openGroups.size > 0;
 
-  // Track whether the section is on screen, so the phone's docked probe only shows while you're here.
+  useEffect(() => () => clearTimeout(pulseTimer.current), []);
+
+  // While a project is picked, the chip's button has two places it can take you: the card ("↓ Project")
+  // or the top of this section ("↑ Skills"). It offers whichever is further from where you are now, so a
+  // click always moves the page (you're never offered the place you're already at). It's measured on
+  // scroll and whenever the layout changes.
+  const pickedProject = selected?.kind === "project" ? selected.id : null;
   useEffect(() => {
-    const section = document.getElementById("work");
-    if (!section) return;
-    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting));
-    observer.observe(section);
-    return () => {
-      observer.disconnect();
-      clearTimeout(pulseTimer.current);
+    if (!pickedProject) return;
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const el = document.getElementById(`project-${pickedProject}`);
+      const section = document.getElementById("work");
+      if (!el || !section) return;
+      if (!el.getClientRects().length) return setJumpDown(true); // a build in the closed dropdown
+      const y = window.scrollY;
+      setJumpDown(Math.abs(workScrollTop(el) - y) > Math.abs(sectionScrollTop(section) - y));
     };
-  }, []);
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+    schedule();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+    };
+  }, [pickedProject, moreOpen, openGroups]);
+
+  // Clear the pick without moving what's on screen: clearing empties the probe's list above, which
+  // would otherwise pull everything below it up the page. Whatever sits in the middle of the screen
+  // is measured before and after, and the page is scrolled back by the difference.
+  const clearPick = () => holdStill(document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2), () => setSelected(null));
+
+  // Escape clears the pick from anywhere on the page (unless a window like the résumé preview is open).
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape" && !document.querySelector("dialog[open]")) clearPick();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selected]);
 
   // If someone follows a link to a build in the dropdown (e.g. #project-telemetry), open it.
   useEffect(() => {
@@ -160,26 +234,28 @@ export function SkillsAndWork() {
   };
 
   // From the probe: go to a project's card (opening the builds dropdown if it's in there) and outline it for a moment.
-  const goToWork = (id: string) => {
+  const goToWork = (id: string, always = false) => {
     if (builds.some((b) => b.id === id)) setMoreOpen(true);
     const phone = window.matchMedia("(max-width: 639px)").matches;
-    scrollToWork(id, phone ? DOCK_SPACE : 0);
+    scrollToWork(id, phone ? PILL_SPACE : 0, always);
     setPulse(id);
     clearTimeout(pulseTimer.current);
     pulseTimer.current = setTimeout(() => setPulse(null), PULSE_MS);
   };
 
-  // Picking a project card (not unpicking it) opens the skill groups it uses and scrolls up to the top of the section.
+  // Picking a project card (not unpicking it) opens the skill groups it uses. The page doesn't move:
+  // the groups open above the card, so the card is held where it was on screen.
   const pickProject = (id: string) => {
     const unpicking = selected?.kind === "project" && selected.id === id;
     setActive(null);
-    toggle({ kind: "project", id });
-    if (unpicking) return;
-    const used = allWork.find((w) => w.id === id)?.skills ?? [];
-    const groups = skillGroups.filter((g) => g.skills.some((s) => used.includes(s.id))).map((g) => g.id);
-    openGroup(groups);
-    scrollToSectionTop();
+    holdStill(document.getElementById(`project-${id}`), () => {
+      toggle({ kind: "project", id });
+      if (unpicking) return;
+      const used = allWork.find((w) => w.id === id)?.skills ?? [];
+      openGroup(skillGroups.filter((g) => g.skills.some((s) => used.includes(s.id))).map((g) => g.id));
+    });
   };
+
 
   // Projects preview their skills while a mouse hovers them or the keyboard focuses them, and pin
   // them on click/tap (or Enter/Space). Taps don't preview: a phone treats a tap as hovering and
@@ -234,17 +310,39 @@ export function SkillsAndWork() {
             .filter(Boolean)
             .join(" and ")}`
         : "Not in a project on this page yet";
+  // The chip's shorter version: "4 projects, 4 builds" / "1 build" / "6 skills".
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const chipSub = !selected
+    ? ""
+    : selected.kind === "project"
+      ? plural(chips.length, "skill")
+      : matching
+        ? [featuredMatches && plural(featuredMatches, "project"), matchingBuilds && plural(matchingBuilds, "build")].filter(Boolean).join(", ")
+        : "no projects yet";
 
-  const probe = (variant: "inline" | "dock") => {
-    const dock = variant === "dock";
+  // The phone pill's stepper: every piece of work the picked skill or group lights up, featured cards first.
+  const matchIds = selected && selected.kind !== "project" ? allWork.filter(uses).map((w) => w.id) : [];
+  const pickKey = selected ? `${selected.kind}:${selected.id}` : "";
+  const stepIdx = step?.key === pickKey ? step.idx : null; // a new pick starts from the top again
+  const stepTo = (idx: number) => {
+    const n = matchIds.length;
+    if (!n) return;
+    const i = (idx + n) % n;
+    setStep({ key: pickKey, idx: i });
+    goToWork(matchIds[i]);
+  };
+  // The chip's "↓ Project" / "↑ Skills" for a picked project (see jumpDown above).
+  const projectJump = () => {
+    if (selected?.kind !== "project") return;
+    if (jumpDown) goToWork(selected.id, true);
+    else scrollToSectionTop();
+  };
+
+  const probe = () => {
     return (
       <div
         role="status"
-        className={
-          dock
-            ? "fixed inset-x-0 bottom-0 z-30 flex flex-col gap-2 border-t border-line-strong bg-board/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_24px_-10px_rgb(0_0_0/0.85)] backdrop-blur-md"
-            : `flex flex-col gap-2.5 rounded-[10px] border bg-board px-4 py-3 transition-colors duration-200 ${selected ? "border-line-strong" : "border-line"}`
-        }
+        className={`flex flex-col gap-2.5 rounded-[10px] border bg-board px-4 py-3 transition-colors duration-200 ${selected ? "border-line-strong" : "border-line"}`}
       >
         <div className="flex min-h-7 items-center gap-2.5 font-mono text-xs tracking-[0.08em]">
           <span
@@ -260,21 +358,20 @@ export function SkillsAndWork() {
               <span className="truncate uppercase text-ink">{selectedName}</span>
             </>
           )}
-          {!dock && <span className="truncate font-sans text-[13px] tracking-normal text-dim">{probeSub}</span>}
+          <span className="truncate font-sans text-[13px] tracking-normal text-dim">{probeSub}</span>
           {selected && (
             <button
               type="button"
-              onClick={() => setSelected(null)}
+              onClick={clearPick}
               aria-label="Clear the probe"
               className="ml-auto min-h-8 flex-none cursor-pointer rounded border-0 bg-transparent px-1.5 font-mono text-xs text-dim hover:text-ink"
             >
-              ✕{dock ? "" : " CLEAR"}
+              ✕ CLEAR
             </button>
           )}
         </div>
-        {dock && <p className="m-0 text-[13px] text-muted">{probeSub}</p>}
         {chips.length > 0 && (
-          <ul className={`m-0 flex list-none gap-2 p-0 ${dock ? "-mx-4 overflow-x-auto px-4 pb-0.5" : "flex-wrap"}`}>
+          <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
             {chips.map((c) => (
               <li key={c.key} className="flex-none">
                 <button
@@ -309,7 +406,7 @@ export function SkillsAndWork() {
             {/* Always takes up its space (just hidden when nothing is picked), so showing it never shifts the board. */}
             <button
               type="button"
-              onClick={() => setSelected(null)}
+              onClick={clearPick}
               aria-hidden={!selected}
               tabIndex={selected ? undefined : -1}
               className={`min-h-10 rounded-md border border-line-strong bg-pad px-3.5 font-mono text-sm text-ink hover:border-copper ${selected ? "" : "invisible"}`}
@@ -436,10 +533,142 @@ export function SkillsAndWork() {
           })}
         </div>
 
-        {/* The probe: inline under the board from 640px up. On phones it docks to the bottom instead (below). */}
-        <div className="max-sm:hidden">{probe("inline")}</div>
+        {/* The probe: inline under the board from 640px up. On phones the pick chip's list (below) does its job. */}
+        <div className="max-sm:hidden">{probe()}</div>
       </div>
-      {inView && selected && createPortal(<div className="sm:hidden">{probe("dock")}</div>, document.body)}
+      {/* While something is picked, a chip shows it: along the bottom on phones, in the corner on desktop (see the comment at the top). */}
+      {selected &&
+        createPortal(
+          <div
+            role="group"
+            aria-label="Your pick"
+            onKeyDown={(e) => {
+              // ← and → step through the matches while focus is on the chip.
+              if (selected.kind === "project" || !matchIds.length || (e.target as HTMLElement).closest("dialog")) return;
+              if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+              e.preventDefault();
+              stepTo(e.key === "ArrowRight" ? (stepIdx ?? -1) + 1 : (stepIdx ?? 0) - 1);
+            }}
+            className="pick-chip fixed inset-x-3 bottom-[max(14px,env(safe-area-inset-bottom))] z-30 flex items-center gap-1.5 rounded-full border border-copper bg-panel/95 p-1.5 font-mono text-xs text-ink shadow-[0_10px_30px_-8px_rgb(0_0_0/0.85),0_0_18px_-8px_var(--color-copper)] backdrop-blur-md sm:inset-x-auto sm:bottom-6 sm:right-6 sm:gap-2"
+          >
+            {selected.kind === "project" ? (
+              <>
+                <span className="flex min-w-0 flex-1 items-center gap-2 pl-2 sm:max-w-[420px]">
+                  <span aria-hidden="true" className="size-2 flex-none rounded-full bg-led shadow-[0_0_6px_var(--color-led)]" />
+                  <span className="truncate uppercase">{selectedName}</span>
+                  <span className="whitespace-nowrap text-dim">· {chipSub}</span>
+                </span>
+                <button type="button" onClick={projectJump} className={PILL_BTN}>
+                  {jumpDown ? "↓ Project" : "↑ Skills"}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => sheetRef.current?.showModal()}
+                  disabled={!matchIds.length}
+                  aria-haspopup="dialog"
+                  aria-label={matchIds.length ? `${selectedName}: show every match` : `${selectedName}: ${chipSub}`}
+                  title={matchIds.length ? "Show every match" : undefined}
+                  className="flex h-[34px] min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-full border-0 bg-transparent pl-2 pr-1 text-left font-mono text-xs uppercase text-ink enabled:hover:text-copper disabled:cursor-default sm:h-8 sm:max-w-[300px] sm:flex-none"
+                >
+                  <span aria-hidden="true" className="size-2 flex-none rounded-full bg-led shadow-[0_0_6px_var(--color-led)]" />
+                  <span className="truncate">{selectedName}</span>
+                  {matchIds.length > 0 ? (
+                    <span aria-hidden="true" className="flex-none text-[10px] text-copper">
+                      ▲
+                    </span>
+                  ) : (
+                    <span className="whitespace-nowrap normal-case text-dim">· {chipSub}</span>
+                  )}
+                </button>
+                {matchIds.length > 0 && (
+                  <span className="flex flex-none items-center gap-1">
+                    <button type="button" onClick={() => stepTo(stepIdx === null ? -1 : stepIdx - 1)} aria-label="Previous match" className={PILL_BTN}>
+                      ◀
+                    </button>
+                    <span aria-live="polite" className="min-w-11 text-center tabular-nums">
+                      <span className="sr-only">Match </span>
+                      {stepIdx === null ? 0 : stepIdx + 1} / {matchIds.length}
+                    </span>
+                    <button type="button" onClick={() => stepTo(stepIdx === null ? 0 : stepIdx + 1)} aria-label="Next match" className={PILL_BTN}>
+                      ▶
+                    </button>
+                  </span>
+                )}
+              </>
+            )}
+            <button
+              type="button"
+              onClick={clearPick}
+              aria-label="Clear the pick"
+              title="Clear (Esc)"
+              className="h-[34px] min-w-[34px] flex-none cursor-pointer rounded-full border-0 bg-copper px-2.5 font-mono text-xs font-bold text-board hover:brightness-110 sm:h-8 sm:px-3"
+            >
+              ✕<span className="max-sm:hidden"> Clear</span>
+            </button>
+            {/* Every match as a list: a sheet sliding up from the bottom on phones, a small panel above the chip on
+                desktop (nothing dimmed there). Picking one closes it and goes there; so does a click outside it, or Escape. */}
+            {selected.kind !== "project" && (
+              <dialog
+                ref={sheetRef}
+                aria-label={`Work that uses ${selectedName}`}
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) sheetRef.current?.close(); // a click on the page behind it
+                }}
+                className="pick-sheet fixed inset-x-0 bottom-0 top-auto m-0 max-h-[80dvh] w-full max-w-full overflow-y-auto rounded-t-[18px] border-0 border-t border-copper bg-panel p-0 text-ink shadow-[0_-16px_40px_-10px_rgb(0_0_0/0.9)] backdrop:bg-black/50 sm:inset-x-auto sm:bottom-[76px] sm:right-6 sm:max-h-[60vh] sm:w-[380px] sm:rounded-[14px] sm:border sm:shadow-[0_16px_40px_-10px_rgb(0_0_0/0.9),0_0_18px_-8px_var(--color-copper)] sm:backdrop:bg-transparent"
+              >
+                <div className="flex flex-col px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2.5 sm:pb-2 sm:pt-3.5">
+                  <span aria-hidden="true" className="mb-2.5 h-1 w-10 self-center rounded-full bg-line-strong sm:hidden" />
+                  <div className="flex items-center gap-2 font-mono text-xs">
+                    <span aria-hidden="true" className="size-2 flex-none rounded-full bg-led shadow-[0_0_6px_var(--color-led)]" />
+                    <span className="truncate uppercase tracking-[0.08em]">{selectedName}</span>
+                    <span className="whitespace-nowrap text-dim">· {chipSub}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sheetRef.current?.close();
+                        scrollToSectionTop();
+                      }}
+                      className={`${PILL_BTN} ml-auto`}
+                    >
+                      ↑ Skills
+                    </button>
+                  </div>
+                  <ul className="m-0 mt-2 list-none p-0">
+                    {matchIds.map((id, i) => {
+                      const work = allWork.find((w) => w.id === id);
+                      if (!work) return null;
+                      const featured = projects.find((p) => p.id === id);
+                      return (
+                        <li key={id}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              sheetRef.current?.close();
+                              stepTo(i);
+                            }}
+                            className={`flex min-h-12 w-full cursor-pointer items-center gap-3 border-0 border-b border-line px-1.5 text-left font-sans text-[15px] text-ink last:border-b-0 hover:text-copper sm:min-h-10 sm:text-sm ${
+                              i === stepIdx ? "bg-copper/10" : "bg-transparent"
+                            }`}
+                          >
+                            <span className="w-10 flex-none font-mono text-xs text-copper">{featured ? featured.tag.slice(0, 2) : "build"}</span>
+                            <span className="flex-1">{work.title}</span>
+                            <span aria-hidden="true" className="text-dim">
+                              →
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </dialog>
+            )}
+          </div>,
+          document.body,
+        )}
 
       <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h3 className="m-0 font-mono text-[13px] font-normal uppercase tracking-[0.1em] text-copper">Featured</h3>

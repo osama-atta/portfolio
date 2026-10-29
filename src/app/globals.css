@@ -232,6 +232,31 @@ html.resume-open {
     transform: translateY(10px) scale(0.985);
   }
 }
+/* The skill pick's floating chip (SkillsAndWork) slides in from below. */
+.pick-chip {
+  animation: pick-chip-in 180ms ease-out;
+}
+@keyframes pick-chip-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+/* The phone pill's list of matches slides up from the bottom. */
+.pick-sheet[open] {
+  animation: pick-sheet-in 220ms ease-out;
+}
+@keyframes pick-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+/* On desktop the list is a small panel above the chip, so it just rises a little, like the chip. */
+@media (min-width: 640px) {
+  .pick-sheet[open] {
+    animation-name: pick-chip-in;
+  }
+}
 @media (min-width: 640px) {
   .resume-dialog {
     padding: 32px;
@@ -258,6 +283,10 @@ html.resume-open {
     opacity: 1;
   }
   .resume-dialog[open] .resume-panel {
+    animation: none;
+  }
+  .pick-chip,
+  .pick-sheet[open] {
     animation: none;
   }
 }

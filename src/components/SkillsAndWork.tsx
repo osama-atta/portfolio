@@ -142,6 +142,73 @@ export function SkillsAndWork() {
 
   useEffect(() => () => clearTimeout(pulseTimer.current), []);
 
+  // Phones: swipe the list down to close it. A drag that starts while the list is scrolled to its top
+  // and heads down moves the whole sheet with your finger; let go past 90px (or with a quick flick) and
+  // it slides away and closes, otherwise it springs back. Any other drag just scrolls the list.
+  // Native listeners, because the move has to be able to stop the page from scrolling (preventDefault).
+  useEffect(() => {
+    const sheet = sheetRef.current;
+    if (!listOpen || !sheet || !window.matchMedia("(max-width: 639px)").matches) return;
+    let startY = 0;
+    let dy = 0;
+    let recent: { t: number; dy: number }[] = []; // the last ~100ms of the drag, to tell a flick from a slow drag
+    let tracking = false;
+    let dragging = false;
+    const onStart = (e: TouchEvent) => {
+      tracking = e.touches.length === 1;
+      dragging = false;
+      dy = 0;
+      recent = [];
+      startY = e.touches[0]?.clientY ?? 0;
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!tracking) return;
+      const d = e.touches[0].clientY - startY;
+      if (!dragging) {
+        if (Math.abs(d) < 6) return;
+        if (d < 0 || sheet.scrollTop > 0) {
+          tracking = false; // scrolling the list, not closing it
+          return;
+        }
+        dragging = true;
+        sheet.style.transition = "none";
+      }
+      e.preventDefault();
+      dy = Math.max(0, d);
+      recent = [...recent.filter((r) => e.timeStamp - r.t < 100), { t: e.timeStamp, dy }];
+      sheet.style.transform = `translateY(${dy}px)`;
+    };
+    const onEnd = (e: TouchEvent) => {
+      tracking = false;
+      if (!dragging) return;
+      dragging = false;
+      // A flick: moving down at over 0.5px per ms over the last ~100ms, and still moving when the finger lifts.
+      const first = recent[0];
+      const last = recent[recent.length - 1];
+      const flick = first && last && e.timeStamp - last.t < 100 && (last.dy - first.dy) / Math.max(16, last.t - first.t) > 0.5;
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (dy > 90 || flick) {
+        if (reduced) return sheet.close();
+        sheet.style.transition = "transform 180ms ease-in";
+        sheet.style.transform = "translateY(100%)";
+        setTimeout(() => sheet.close(), 180);
+      } else {
+        sheet.style.transition = reduced ? "none" : "transform 200ms ease-out";
+        sheet.style.transform = "";
+      }
+    };
+    sheet.addEventListener("touchstart", onStart, { passive: true });
+    sheet.addEventListener("touchmove", onMove, { passive: false });
+    sheet.addEventListener("touchend", onEnd);
+    sheet.addEventListener("touchcancel", onEnd);
+    return () => {
+      sheet.removeEventListener("touchstart", onStart);
+      sheet.removeEventListener("touchmove", onMove);
+      sheet.removeEventListener("touchend", onEnd);
+      sheet.removeEventListener("touchcancel", onEnd);
+    };
+  }, [listOpen]);
+
   // While a project is picked, the chip's button has two places it can take you: the card ("↓ Project")
   // or the top of this section ("↑ Skills"). It offers whichever is further from where you are now, so a
   // click always moves the page (you're never offered the place you're already at). It's measured on
@@ -617,16 +684,21 @@ export function SkillsAndWork() {
               ✕<span className="max-sm:hidden"> Clear</span>
             </button>
             {/* Every match as a list: a sheet sliding up from the bottom on phones, a small panel above the chip on
-                desktop (nothing dimmed there). Picking one closes it and goes there; so does a click outside it, or Escape. */}
+                desktop (nothing dimmed there). Picking one closes it and goes there. A click outside it, Escape, or
+                (on phones) swiping it down closes it. */}
             {selected.kind !== "project" && (
               <dialog
                 ref={sheetRef}
                 aria-label={`Work that uses ${selectedName}`}
-                onClose={() => setListOpen(false)}
+                onClose={(e) => {
+                  setListOpen(false);
+                  e.currentTarget.style.transform = ""; // reset after a swipe-down, ready for next time
+                  e.currentTarget.style.transition = "";
+                }}
                 onClick={(e) => {
                   if (e.target === e.currentTarget) sheetRef.current?.close(); // a click on the page behind it
                 }}
-                className="pick-sheet fixed inset-x-0 bottom-0 top-auto m-0 max-h-[80dvh] w-full max-w-full overflow-y-auto rounded-t-[18px] border-0 border-t border-copper bg-panel p-0 text-ink shadow-[0_-16px_40px_-10px_rgb(0_0_0/0.9)] backdrop:bg-black/50 sm:inset-x-auto sm:bottom-[76px] sm:right-6 sm:max-h-[60vh] sm:w-[380px] sm:rounded-[14px] sm:border sm:shadow-[0_16px_40px_-10px_rgb(0_0_0/0.9),0_0_18px_-8px_var(--color-copper)] sm:backdrop:bg-transparent"
+                className="pick-sheet fixed inset-x-0 bottom-0 top-auto m-0 max-h-[80dvh] w-full max-w-full overflow-y-auto overscroll-contain rounded-t-[18px] border-0 border-t border-copper bg-panel p-0 text-ink shadow-[0_-16px_40px_-10px_rgb(0_0_0/0.9)] backdrop:bg-black/50 sm:inset-x-auto sm:bottom-[76px] sm:right-6 sm:max-h-[60vh] sm:w-[380px] sm:rounded-[14px] sm:border sm:shadow-[0_16px_40px_-10px_rgb(0_0_0/0.9),0_0_18px_-8px_var(--color-copper)] sm:backdrop:bg-transparent"
               >
                 <div className="flex flex-col px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2.5 sm:pb-2 sm:pt-3.5">
                   <span aria-hidden="true" className="mb-2.5 h-1 w-10 self-center rounded-full bg-line-strong sm:hidden" />

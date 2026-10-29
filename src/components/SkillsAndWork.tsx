@@ -128,6 +128,7 @@ export function SkillsAndWork() {
   const [step, setStep] = useState<{ key: string; idx: number } | null>(null); // where the phone pill's ◀ ▶ is, per pick
   const pulseTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const sheetRef = useRef<HTMLDialogElement>(null);
+  const [listOpen, setListOpen] = useState(false); // is the chip's list of matches open? (flips its ▲)
 
   const openGroup = (ids: SkillGroupId[]) => setOpenGroups((cur) => new Set([...cur, ...ids]));
   const flipGroup = (id: SkillGroupId) =>
@@ -566,17 +567,24 @@ export function SkillsAndWork() {
               <>
                 <button
                   type="button"
-                  onClick={() => sheetRef.current?.showModal()}
+                  onClick={() => {
+                    sheetRef.current?.showModal();
+                    setListOpen(true);
+                  }}
                   disabled={!matchIds.length}
                   aria-haspopup="dialog"
+                  aria-expanded={matchIds.length ? listOpen : undefined}
                   aria-label={matchIds.length ? `${selectedName}: show every match` : `${selectedName}: ${chipSub}`}
-                  title={matchIds.length ? "Show every match" : undefined}
-                  className="flex h-[34px] min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-full border-0 bg-transparent pl-2 pr-1 text-left font-mono text-xs uppercase text-ink enabled:hover:text-copper disabled:cursor-default sm:h-8 sm:max-w-[300px] sm:flex-none"
+                  title={matchIds.length ? (listOpen ? "Hide the list" : "Show every match") : undefined}
+                  className={`flex h-[34px] min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-full border-0 bg-transparent pl-2 pr-1 text-left font-mono text-xs uppercase enabled:hover:text-copper disabled:cursor-default sm:h-8 sm:max-w-[300px] sm:flex-none ${
+                    listOpen ? "text-copper" : "text-ink"
+                  }`}
                 >
                   <span aria-hidden="true" className="size-2 flex-none rounded-full bg-led shadow-[0_0_6px_var(--color-led)]" />
                   <span className="truncate">{selectedName}</span>
                   {matchIds.length > 0 ? (
-                    <span aria-hidden="true" className="flex-none text-[10px] text-copper">
+                    // Points up to where the list opens; flips to point down while it's open, to say "click to put it away".
+                    <span aria-hidden="true" className={`flex-none text-[10px] text-copper transition-transform duration-200 ${listOpen ? "rotate-180" : ""}`}>
                       ▲
                     </span>
                   ) : (
@@ -614,6 +622,7 @@ export function SkillsAndWork() {
               <dialog
                 ref={sheetRef}
                 aria-label={`Work that uses ${selectedName}`}
+                onClose={() => setListOpen(false)}
                 onClick={(e) => {
                   if (e.target === e.currentTarget) sheetRef.current?.close(); // a click on the page behind it
                 }}

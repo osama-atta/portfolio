@@ -362,8 +362,8 @@ export function SkillsAndWork() {
           onClick: () => toggle({ kind: "skill", id }),
         }))
       : [
-          ...projects.filter(uses).map((p) => ({ key: p.id, label: p.title, pre: p.tag.slice(0, 2), strong: true, onClick: () => goToWork(p.id) })),
-          ...builds.filter(uses).map((b) => ({ key: b.id, label: b.title, post: "build", strong: false, onClick: () => goToWork(b.id) })),
+          ...projects.filter(uses).map((p) => ({ key: p.id, label: p.title, pre: p.tag.slice(0, 2), strong: true, onClick: () => goToMatch(p.id) })),
+          ...builds.filter(uses).map((b) => ({ key: b.id, label: b.title, post: "build", strong: false, onClick: () => goToMatch(b.id) })),
         ];
   const featuredMatches = projects.filter(uses).length;
   const probeSub = !selected
@@ -388,7 +388,7 @@ export function SkillsAndWork() {
         ? [featuredMatches && plural(featuredMatches, "project"), matchingBuilds && plural(matchingBuilds, "build")].filter(Boolean).join(", ")
         : "no projects yet";
 
-  // The phone pill's stepper: every piece of work the picked skill or group lights up, featured cards first.
+  // The chip's stepper: every piece of work the picked skill or group lights up, featured cards first.
   const matchIds = selected && selected.kind !== "project" ? allWork.filter(uses).map((w) => w.id) : [];
   const pickKey = selected ? `${selected.kind}:${selected.id}` : "";
   const stepIdx = step?.key === pickKey ? step.idx : null; // a new pick starts from the top again
@@ -398,6 +398,12 @@ export function SkillsAndWork() {
     const i = (idx + n) % n;
     setStep({ key: pickKey, idx: i });
     goToWork(matchIds[i]);
+  };
+  // A match picked from the probe's list: go there and move the chip's counter to it, so ◀ ▶ carry on from there.
+  const goToMatch = (id: string) => {
+    const i = matchIds.indexOf(id);
+    if (i >= 0) stepTo(i);
+    else goToWork(id);
   };
   // The chip's "↓ Project" / "↑ Skills" for a picked project (see jumpDown above).
   const projectJump = () => {
